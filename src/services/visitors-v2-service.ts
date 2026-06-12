@@ -52,7 +52,7 @@ export class VisitorsV2Service {
     try {
 
       const url = `${this.getBaseUrl()}/identify`;
-      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      const currentHost = typeof window !== 'undefined' ? window.location.host : 'localhost';
 
       // Obtener información de consentimiento del localStorage si no se proporciona
       let hasAcceptedPrivacyPolicy = false;
