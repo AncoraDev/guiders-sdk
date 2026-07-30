@@ -94,11 +94,13 @@ export function usePresence(): void {
                         (p) => p.userType === 'commercial'
                     ) ?? [];
                     if (commercials.length === 0) {
-                        debugLog('[usePresence] No commercial participants in chat — defaulting to offline');
-                        presenceStatusSignal.value = 'offline';
-                        if (offlineBannerEnabledSignal.value) {
-                            showOfflineBannerSignal.value = true;
-                        }
+                        // Chat sin comercial asignado / sin agentes en Redis:
+                        // no forzar "offline" + banner "Sin conexión" (falso
+                        // negativo histórico). El backend ya incluye disponibles
+                        // en PENDING; si aún así viene vacío, esperar eventos WS.
+                        debugLog(
+                            '[usePresence] No commercial participants — not forcing offline banner'
+                        );
                         return;
                     }
                     const anyOnline = commercials.some(

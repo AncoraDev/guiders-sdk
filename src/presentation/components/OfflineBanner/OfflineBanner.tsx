@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
 import { showOfflineBannerSignal, offlineBannerEnabledSignal } from '../../signals';
-import { offlineBannerTextSignal } from '../../signals/chatState';
+import { offlineBannerTextSignal, chatIdSignal, presenceStatusSignal } from '../../signals/chatState';
+import { presenceServiceSignal } from '../../signals/presenceState';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -60,11 +61,29 @@ export function OfflineBanner() {
     if (!mounted || !enabled) return null;
 
     const handleRetry = () => {
-        if (retryable) {
-            // Trigger reconnect via WebSocket service — signal-based approach:
-            // consumers can hook into this by watching showOfflineBannerSignal
-            showOfflineBannerSignal.value = false;
-        }
+        if (!retryable) return;
+        showOfflineBannerSignal.value = false;
+        // Reintentar sesión + presencia sin forzar F5 al usuario
+        void (async () => {
+            try {
+                const { ChatV2Service } = await import('../../../services/chat-v2-service');
+                const reauthed = await ChatV2Service.getInstance().reAuthenticate();
+                if (!reauthed) return;
+                const chatId = chatIdSignal.peek();
+                const presence = presenceServiceSignal.peek();
+                if (!chatId || !presence?.getChatPresence) return;
+                const snapshot = await presence.getChatPresence(chatId);
+                const commercials =
+                    snapshot?.participants?.filter((p) => p.userType === 'commercial') ?? [];
+                const anyOnline = commercials.some((p) => p.connectionStatus === 'online');
+                if (anyOnline) {
+                    presenceStatusSignal.value = 'online';
+                    showOfflineBannerSignal.value = false;
+                }
+            } catch {
+                // Silencioso: el banner puede volver a mostrarse vía usePresence
+            }
+        })();
     };
 
     const displayText = retryable

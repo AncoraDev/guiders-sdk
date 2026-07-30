@@ -52,7 +52,11 @@ export class VisitorsV2Service {
     try {
 
       const url = `${this.getBaseUrl()}/identify`;
-      const currentHost = typeof window !== 'undefined' ? window.location.host : 'localhost';
+      // Usar hostname (sin puerto) de forma consistente con reAuthenticate / consent.
+      // El backend también normaliza el puerto; host vs hostname era una causa
+      // frecuente de "API Key inválida" → sesión rota → banner "Desconectado".
+      const currentHost =
+        typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
       // Obtener información de consentimiento del localStorage si no se proporciona
       let hasAcceptedPrivacyPolicy = false;

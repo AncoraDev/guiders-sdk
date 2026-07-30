@@ -12,7 +12,7 @@
   <!-- Configuración de Guiders SDK -->
   <script>
     window.GUIDERS_CONFIG = {
-      apiKey: '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0',
+      apiKey: '4ebaa025c7da6277e77521c97e59a92a085b538c01c5c75b84348870dcb55eb8',
       environment: 'development',
       dev: true,
       endpoint: 'http://localhost:3000/api',
