@@ -19,7 +19,7 @@
     "test:visual:update": "playwright test visual-regression --update-snapshots",
     "test:unit": "jest --config jest.config.ts",
     "build": "webpack --mode=production",
-    "start": "bash -c './wp-docker.sh start & webpack serve --mode=development'",
+    "start": "bash -c './wordpress-plugin/wp-docker.sh start & webpack serve --mode=development'",
     "release:wp": "bash wordpress-plugin/build-plugin.sh",
     "release:wp:skip": "bash wordpress-plugin/build-plugin.sh --skip-build",
     "release:wp:publish": "bash wordpress-plugin/release-wp-publish.sh"

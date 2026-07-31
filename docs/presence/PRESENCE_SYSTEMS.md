@@ -254,5 +254,5 @@ subsequent updates via `commercial:availability-changed` on the
 | `src/presentation/types/presence-types.ts` | `PresenceUiStatus`, `PresenceLike` |
 | `src/presentation/components/PresenceIndicator/PresenceIndicator.tsx` | Dot + label component |
 | `src/presentation/components/ChatHeader/CommercialAvatar.tsx` | Header avatar + status text |
-| `docs/sdk-commercial-availability.md` | Detailed availability integration guide |
+| [`sdk-commercial-availability.md`](./sdk-commercial-availability.md) | Detailed availability integration guide |
 | `docs/api/openapi.yaml` | Full API spec for both endpoints |

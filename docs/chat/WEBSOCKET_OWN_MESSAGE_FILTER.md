@@ -132,6 +132,6 @@ Cuando se filtra un mensaje propio:
 
 ## Referencias
 
-- Arquitectura WebSocket: `docs/WEBSOCKET_REALTIME_CHAT.md`
+- Arquitectura WebSocket: [`WEBSOCKET_REALTIME_CHAT.md`](./WEBSOCKET_REALTIME_CHAT.md)
 - Tipos WebSocket: `src/types/websocket-types.ts`
 - Service WebSocket: `src/services/websocket-service.ts`

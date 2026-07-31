@@ -4,6 +4,8 @@ SDK para la integración del sistema de guías y chat en sitios web.
 
 **Versión actual**: 1.4.1
 
+📚 **Documentación técnica**: índice completo en [`docs/README.md`](docs/README.md).
+
 ## 🚀 Inicio Rápido
 
 ```html
@@ -152,23 +154,23 @@ Para desarrollo y pruebas, incluimos un entorno WordPress completo con Docker:
 
 ```bash
 # Iniciar WordPress + MySQL + phpMyAdmin
-./wp-docker.sh start
+./wordpress-plugin/wp-docker.sh start
 
 # Acceder a:
 # - WordPress: http://localhost:8090
 # - phpMyAdmin: http://localhost:8091
 
 # Activar plugin Guiders
-./wp-docker.sh plugin:activate
+./wordpress-plugin/wp-docker.sh plugin:activate
 
 # Instalar plugins de cookies para pruebas
-./wp-docker.sh cookies:install
+./wordpress-plugin/wp-docker.sh cookies:install
 
 # Ver todos los comandos disponibles
-./wp-docker.sh help
+./wordpress-plugin/wp-docker.sh help
 ```
 
-**Documentación completa**: Ver [DOCKER_WORDPRESS.md](DOCKER_WORDPRESS.md) para instrucciones detalladas, comandos útiles y troubleshooting.
+**Documentación completa**: Ver [DOCKER_WORDPRESS.md](docs/wordpress/DOCKER_WORDPRESS.md) para instrucciones detalladas, comandos útiles y troubleshooting.
 
 **Características**:
 - ✅ WordPress + MySQL + phpMyAdmin listos para usar
@@ -328,7 +330,7 @@ La guía incluye:
 
 Para implementación detallada, consulta:
 
-- **[GDPR_CONSENT.md](GDPR_CONSENT.md)** - Guía completa de consentimiento
+- **[GDPR_CONSENT.md](docs/consent/GDPR_CONSENT.md)** - Guía completa de consentimiento
   - Responsabilidades legales explicadas
   - Todas las APIs con ejemplos
   - Integración con gestores de consentimiento populares

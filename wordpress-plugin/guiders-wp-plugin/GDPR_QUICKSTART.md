@@ -216,7 +216,7 @@ El plugin proporciona las **herramientas técnicas** para cumplir con GDPR (cont
 ## 🆘 Soporte
 
 - 📖 Guía completa WordPress: `WORDPRESS_GDPR_GUIDE.md`
-- 📖 Guía general GDPR: `../../GDPR_CONSENT.md`
+- 📖 Guía general GDPR: `../../docs/consent/GDPR_CONSENT.md`
 - 🐛 Issues: [GitHub](https://github.com/RogerPugaRuiz/guiders-sdk/issues)
 - 💬 Email: support@guiders.com
 

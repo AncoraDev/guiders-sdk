@@ -895,7 +895,7 @@ Consentimiento explícito (Art. 6.1.a GDPR)
 
 Si tienes problemas con la implementación:
 
-- 📖 Documentación completa: `GDPR_CONSENT.md`
+- 📖 Documentación completa: `docs/consent/GDPR_CONSENT.md`
 - 🐛 Reportar issues: GitHub Issues
 - 💬 Soporte: support@guiders.com
 
@@ -947,7 +947,7 @@ Si activas GDPR, **todos** los visitantes verán el banner. Si quieres mostrar e
 ## Recursos Adicionales
 
 - [Guía GDPR - AEPD](https://www.aepd.es/es/documento/guia-cookies.pdf)
-- [GDPR_CONSENT.md](../GDPR_CONSENT.md) - Guía completa del SDK
+- [GDPR_CONSENT.md](../docs/consent/GDPR_CONSENT.md) - Guía completa del SDK
 - [Complianz](https://wordpress.org/plugins/complianz-gdpr/) - Plugin recomendado
 - [CookieYes](https://wordpress.org/plugins/cookie-law-info/) - Alternativa gratuita
 - [Code Snippets](https://wordpress.org/plugins/code-snippets/) - Para añadir código sin editar tema

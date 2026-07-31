@@ -190,6 +190,6 @@ Mensaje: "🏥 Citas y consultas: 8:00 AM - 1:00 PM y 3:00 PM - 7:00 PM. Para em
 
 Si tienes problemas con la configuración:
 
-1. Verifica la [documentación técnica](ACTIVE_HOURS.md)
-2. Revisa la [demo interactiva](../examples/active-hours-demo.html)
+1. Verifica la [documentación técnica](../development/ACTIVE_HOURS.md)
+2. Revisa la [demo interactiva](../../examples/active-hours-demo.html)
 3. Contacta al soporte de Guiders

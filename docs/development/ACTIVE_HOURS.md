@@ -292,9 +292,8 @@ activeHours: {
 
 ## 🔗 Enlaces Relacionados
 
-- [Demo Interactiva](../examples/active-hours-demo.html)
-- [Configuración WordPress](wordpress-plugin-config.md)
-- [API Reference](../docs/api-reference.md)
+- [Demo Interactiva](../../examples/active-hours-demo.html)
+- [Configuración WordPress](../wordpress/WORDPRESS_ACTIVE_HOURS.md)
 
 ## 📝 Changelog
 

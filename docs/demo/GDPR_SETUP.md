@@ -374,9 +374,9 @@ console.log(sessionStorage.getItem('guiders_backend_session_id'));
 
 ## 📚 Referencias
 
-- [GDPR_CONSENT.md](../GDPR_CONSENT.md) - Guía general del SDK
-- [WORDPRESS_GDPR_GUIDE.md](../wordpress-plugin/WORDPRESS_GDPR_GUIDE.md) - Guía para WordPress
-- [GDPR_QUICKSTART.md](../wordpress-plugin/guiders-wp-plugin/GDPR_QUICKSTART.md) - Inicio rápido
+- [GDPR_CONSENT.md](../consent/GDPR_CONSENT.md) - Guía general del SDK
+- [WORDPRESS_GDPR_GUIDE.md](../../wordpress-plugin/WORDPRESS_GDPR_GUIDE.md) - Guía para WordPress
+- [GDPR_QUICKSTART.md](../../wordpress-plugin/guiders-wp-plugin/GDPR_QUICKSTART.md) - Inicio rápido
 
 ## 💬 Soporte
 

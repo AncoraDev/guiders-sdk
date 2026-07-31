@@ -260,7 +260,7 @@ window.GUIDERS_CONFIG = {
 
 ## 🔗 Referencias
 
-- **Guía completa**: `TRACKING_V2_GUIDE.md`
+- **Guía completa**: [`TRACKING_V2_GUIDE.md`](./TRACKING_V2_GUIDE.md)
 - **Demo interactivo**: `http://127.0.0.1:8083/tracking-demo`
 - **Código fuente**:
   - `src/services/tracking-v2-service.ts`

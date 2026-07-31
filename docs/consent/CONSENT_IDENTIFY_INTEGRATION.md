@@ -356,8 +356,8 @@ Sino, se usa el estado de localStorage automáticamente.
 
 - [GDPR_CONSENT.md](./GDPR_CONSENT.md) - Sistema de consentimiento del SDK
 - [CONSENT_IDENTIFY_INTEGRATION.md](./CONSENT_IDENTIFY_INTEGRATION.md) - Este documento
-- [visitors-v2-service.ts](./src/services/visitors-v2-service.ts) - Implementación del servicio
-- [identity-signal.ts](./src/core/identity-signal.ts) - Implementación del signal
+- [visitors-v2-service.ts](../../src/services/visitors-v2-service.ts) - Implementación del servicio
+- [identity-signal.ts](../../src/core/identity-signal.ts) - Implementación del signal
 
 ## 🆘 Troubleshooting
 

@@ -2,6 +2,8 @@
 
 Guide for AI coding agents working on this TypeScript SDK for real-time visitor tracking and chat.
 
+📚 **Documentation index**: [`docs/README.md`](docs/README.md)
+
 ## Build/Lint/Test Commands
 
 ```bash
@@ -135,7 +137,7 @@ visitor's own state instead of the agent's.
 visibility comes from commercial presence (`usePresence`). Do not force the
 banner on PENDING chats without an assigned agent (avoids false “Sin conexión”).
 
-📖 **Full reference**: [`docs/PRESENCE_SYSTEMS.md`](docs/PRESENCE_SYSTEMS.md) —
+📖 **Full reference**: [`docs/presence/PRESENCE_SYSTEMS.md`](docs/presence/PRESENCE_SYSTEMS.md) —
 covers REST endpoints, WebSocket events, state mapping, SDK wiring, and common
 pitfalls for both systems.
 

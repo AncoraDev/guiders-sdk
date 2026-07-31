@@ -45,7 +45,7 @@ services:
     volumes:
       - wordpress_data:/var/www/html
       # Montar el plugin directamente para desarrollo
-      - ./wordpress-plugin/guiders-wp-plugin:/var/www/html/wp-content/plugins/guiders-wp-plugin
+      - ./guiders-wp-plugin:/var/www/html/wp-content/plugins/guiders-wp-plugin
     networks:
       - guiders-wp-network
 
@@ -76,7 +76,7 @@ services:
     user: "33:33" # www-data user
     volumes:
       - wordpress_data:/var/www/html
-      - ./wordpress-plugin/guiders-wp-plugin:/var/www/html/wp-content/plugins/guiders-wp-plugin
+      - ./guiders-wp-plugin:/var/www/html/wp-content/plugins/guiders-wp-plugin
     networks:
       - guiders-wp-network
     command: tail -f /dev/null # Mantener el contenedor activo

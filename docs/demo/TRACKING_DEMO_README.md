@@ -165,7 +165,7 @@ Cada 1 segundo (configurable), el agregador:
 
 ## 📚 Más Información
 
-- **Guía completa**: Ver `TRACKING_V2_GUIDE.md` en la raíz del proyecto
+- **Guía completa**: Ver [`docs/tracking/TRACKING_V2_GUIDE.md`](../tracking/TRACKING_V2_GUIDE.md)
 - **Código fuente**:
   - `src/core/event-throttler.ts`
   - `src/core/event-aggregator.ts`

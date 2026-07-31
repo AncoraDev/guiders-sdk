@@ -1,8 +1,19 @@
 #!/bin/bash
 
 # Script helper para gestionar el entorno WordPress de desarrollo
+# Ubicación: wordpress-plugin/wp-docker.sh (ejecutar desde aquí o vía ruta)
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Preferir Docker Compose V2
+if docker compose version > /dev/null 2>&1; then
+  COMPOSE=(docker compose)
+else
+  COMPOSE=(docker-compose)
+fi
 
 # Colores
 RED='\033[0;31m'
@@ -44,7 +55,7 @@ check_docker() {
 
 # Función para verificar si los servicios están corriendo
 check_services() {
-    if ! docker-compose ps | grep -q "Up"; then
+    if ! "${COMPOSE[@]}" ps | grep -q "Up"; then
         return 1
     fi
     return 0
@@ -55,7 +66,7 @@ case "$1" in
     start)
         print_header "Iniciando WordPress"
         check_docker
-        docker-compose up -d
+        "${COMPOSE[@]}" up -d
         print_success "Servicios iniciados"
         print_info "WordPress: http://localhost:8090"
         print_info "phpMyAdmin: http://localhost:8091"
@@ -63,20 +74,20 @@ case "$1" in
 
     stop)
         print_header "Deteniendo WordPress"
-        docker-compose stop
+        "${COMPOSE[@]}" stop
         print_success "Servicios detenidos"
         ;;
 
     restart)
         print_header "Reiniciando WordPress"
-        docker-compose restart
+        "${COMPOSE[@]}" restart
         print_success "Servicios reiniciados"
         ;;
 
     down)
         print_header "Eliminando contenedores"
         print_warning "Esto eliminará los contenedores pero conservará los datos"
-        docker-compose down
+        "${COMPOSE[@]}" down
         print_success "Contenedores eliminados"
         ;;
 
@@ -86,7 +97,7 @@ case "$1" in
         read -p "¿Estás seguro? (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            docker-compose down -v
+            "${COMPOSE[@]}" down -v
             print_success "Entorno reseteado completamente"
         else
             print_info "Operación cancelada"
@@ -96,39 +107,39 @@ case "$1" in
     logs)
         print_header "Mostrando logs"
         if [ -z "$2" ]; then
-            docker-compose logs -f
+            "${COMPOSE[@]}" logs -f
         else
-            docker-compose logs -f "$2"
+            "${COMPOSE[@]}" logs -f "$2"
         fi
         ;;
 
     status)
         print_header "Estado de servicios"
-        docker-compose ps
+        "${COMPOSE[@]}" ps
         ;;
 
     shell)
         print_header "Shell interactivo"
         service=${2:-wordpress}
         print_info "Conectando a: $service"
-        docker-compose exec "$service" bash
+        "${COMPOSE[@]}" exec "$service" bash
         ;;
 
     plugin:activate)
         print_header "Activando plugin Guiders"
-        docker-compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin activate guiders-wp-plugin --allow-root
         print_success "Plugin activado"
         ;;
 
     plugin:deactivate)
         print_header "Desactivando plugin Guiders"
-        docker-compose exec wpcli wp plugin deactivate guiders-wp-plugin --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin deactivate guiders-wp-plugin --allow-root
         print_success "Plugin desactivado"
         ;;
 
     plugin:list)
         print_header "Listando plugins"
-        docker-compose exec wpcli wp plugin list --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin list --allow-root
         ;;
 
     plugin:install)
@@ -137,30 +148,30 @@ case "$1" in
             exit 1
         fi
         print_header "Instalando plugin: $2"
-        docker-compose exec wpcli wp plugin install "$2" --activate --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin install "$2" --activate --allow-root
         print_success "Plugin instalado y activado"
         ;;
 
     cookies:install)
         print_header "Instalando plugins de cookies populares"
         print_info "Instalando Moove GDPR..."
-        docker-compose exec wpcli wp plugin install gdpr-cookie-compliance --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin install gdpr-cookie-compliance --allow-root
         print_info "Instalando Beautiful Cookie Banner..."
-        docker-compose exec wpcli wp plugin install beautiful-and-responsive-cookie-consent --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin install beautiful-and-responsive-cookie-consent --allow-root
         print_info "Instalando Complianz GDPR..."
-        docker-compose exec wpcli wp plugin install complianz-gdpr --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin install complianz-gdpr --allow-root
         print_info "Instalando CookieYes..."
-        docker-compose exec wpcli wp plugin install cookie-law-info --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin install cookie-law-info --allow-root
         print_info "Instalando WP Consent API..."
-        docker-compose exec wpcli wp plugin install wp-consent-api --allow-root
+        "${COMPOSE[@]}" exec wpcli wp plugin install wp-consent-api --allow-root
         print_success "Plugins de cookies instalados (usa plugin:list para verlos)"
         ;;
 
     db:backup)
         print_header "Haciendo backup de la base de datos"
         filename="backup-$(date +%Y%m%d-%H%M%S).sql"
-        docker-compose exec wpcli wp db export "/var/www/html/$filename" --allow-root
-        docker-compose exec wordpress mv "/var/www/html/$filename" /tmp/
+        "${COMPOSE[@]}" exec wpcli wp db export "/var/www/html/$filename" --allow-root
+        "${COMPOSE[@]}" exec wordpress mv "/var/www/html/$filename" /tmp/
         docker cp "guiders-wp-site:/tmp/$filename" "./$filename"
         print_success "Backup guardado: $filename"
         ;;
@@ -172,13 +183,13 @@ case "$1" in
         fi
         print_header "Importando base de datos"
         docker cp "$2" guiders-wp-site:/tmp/import.sql
-        docker-compose exec wpcli wp db import /tmp/import.sql --allow-root
+        "${COMPOSE[@]}" exec wpcli wp db import /tmp/import.sql --allow-root
         print_success "Base de datos importada"
         ;;
 
     cache:flush)
         print_header "Limpiando caché"
-        docker-compose exec wpcli wp cache flush --allow-root
+        "${COMPOSE[@]}" exec wpcli wp cache flush --allow-root
         print_success "Caché limpiada"
         ;;
 
@@ -188,7 +199,7 @@ case "$1" in
             exit 1
         fi
         print_header "Reemplazando URLs"
-        docker-compose exec wpcli wp search-replace "$2" "$3" --allow-root
+        "${COMPOSE[@]}" exec wpcli wp search-replace "$2" "$3" --allow-root
         print_success "URLs reemplazadas"
         ;;
 

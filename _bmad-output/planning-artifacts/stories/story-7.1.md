@@ -4,7 +4,7 @@
 **Status:** Completed
 **Depends on:** Story 6.1 (sistema de tokens GCS), Story 6.7 (responsive + dark mode)
 **Implements:** BL-001 (Product Backlog)
-**Source:** [docs/BACKLOG.md](../../../docs/BACKLOG.md)
+**Source:** [docs/reference/BACKLOG.md](../../../docs/reference/BACKLOG.md)
 
 ---
 

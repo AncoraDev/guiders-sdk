@@ -724,13 +724,14 @@ php -S 127.0.0.1:8083 -t demo/app
 ## Key Documentation Files
 
 - `README.md` - User-facing SDK documentation with installation and features
+- `docs/README.md` - **Índice único** de toda la documentación del repo
 - `CLAUDE.md` - This file (architecture and development guide)
+- `AGENTS.md` - Instructions for coding agents
 - `.github/copilot-instructions.md` - Detailed development patterns for AI agents
-- `GDPR_CONSENT.md` - Complete GDPR consent implementation guide
+- `docs/consent/GDPR_CONSENT.md` - Complete GDPR consent implementation guide
 - `wordpress-plugin/WORDPRESS_GDPR_GUIDE.md` - WordPress-specific GDPR integration
-- `wordpress-plugin/PLUGIN_UPDATES.md` - Plugin update system documentation
-- `MIGRATION_GUIDE_V2.md` - API v2 migration guide
-- `README_V2.md` - Chat API v2 features and usage
+- `docs/wordpress/` - Docker WP, active hours, auto-updates
+- `docs/presence/PRESENCE_SYSTEMS.md` - Presence systems reference
 
 ## Key Dependencies
 

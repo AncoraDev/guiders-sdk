@@ -329,7 +329,7 @@ app.put('/api/v2/chats/:chatId/close', async (req, res) => {
 
 ## 🔗 Referencias
 
-- **Guía de presencia**: `PRESENCE_INDEPENDENCE.md`
+- **Guía de presencia**: [`../presence/PRESENCE_INDEPENDENCE.md`](../presence/PRESENCE_INDEPENDENCE.md)
 - **Estado AWAY**: `AWAY_STATUS_SOLUTION.md`
 - **Chat API v2**: `README_V2.md`
 - **Migración API**: `MIGRATION_GUIDE_V2.md`

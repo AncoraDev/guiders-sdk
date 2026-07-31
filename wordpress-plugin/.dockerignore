@@ -1,0 +1,8 @@
+# Contexto Docker del entorno WP de desarrollo (si se construye imagen propia)
+.git
+.gitignore
+*.md
+*.zip
+*.sql
+backup-*.sql
+.DS_Store

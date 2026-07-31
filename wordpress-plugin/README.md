@@ -2,6 +2,20 @@
 
 Este directorio contiene un plugin completo de WordPress que integra el SDK de Guiders para proporcionar tracking inteligente, chat en vivo y notificaciones en sitios WordPress.
 
+## 🐳 Entorno Docker de desarrollo
+
+En esta carpeta viven `docker-compose.yml` y `wp-docker.sh` (WordPress + MySQL + phpMyAdmin con el plugin montado).
+
+```bash
+# Desde la raíz del repo
+./wordpress-plugin/wp-docker.sh start
+
+# O desde aquí
+./wp-docker.sh start
+```
+
+Guía completa: [`docs/wordpress/DOCKER_WORDPRESS.md`](../docs/wordpress/DOCKER_WORDPRESS.md).
+
 ## 🚀 Características
 
 - **Detección Heurística Inteligente**: Detecta automáticamente elementos como botones "Añadir al carrito", formularios de contacto, etc. sin modificar HTML

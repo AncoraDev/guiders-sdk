@@ -2,16 +2,24 @@
 
 Este entorno Docker proporciona un WordPress completamente funcional para probar el plugin Guiders SDK.
 
+Los ficheros viven en `wordpress-plugin/` (`docker-compose.yml`, `wp-docker.sh`). Ejecuta los comandos desde esa carpeta, o usa el helper desde la raíz del repo:
+
+```bash
+./wordpress-plugin/wp-docker.sh start
+```
+
 ## 🚀 Inicio Rápido
 
 ### 1. Iniciar el entorno
 
 ```bash
+cd wordpress-plugin
+
 # Iniciar todos los servicios
-docker-compose up -d
+docker compose up -d
 
 # Ver logs en tiempo real
-docker-compose logs -f wordpress
+docker compose logs -f wordpress
 ```
 
 ### 2. Acceder a WordPress
@@ -40,7 +48,7 @@ El plugin ya está montado automáticamente en `/wp-content/plugins/guiders-wp-p
 # Ve a Plugins → Plugins Instalados → Activar "Guiders SDK"
 
 # Opción B: Desde línea de comandos
-docker-compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
+docker compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
 ```
 
 ## 📦 Servicios Incluidos
@@ -58,96 +66,96 @@ docker-compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
 
 ```bash
 # Iniciar servicios
-docker-compose up -d
+docker compose up -d
 
 # Detener servicios (conserva datos)
-docker-compose stop
+docker compose stop
 
 # Detener y eliminar contenedores (conserva volúmenes)
-docker-compose down
+docker compose down
 
 # Eliminar TODO (contenedores + volúmenes + red)
-docker-compose down -v
+docker compose down -v
 
 # Ver estado de servicios
-docker-compose ps
+docker compose ps
 
 # Ver logs
-docker-compose logs -f              # Todos los servicios
-docker-compose logs -f wordpress    # Solo WordPress
-docker-compose logs -f db           # Solo MySQL
+docker compose logs -f              # Todos los servicios
+docker compose logs -f wordpress    # Solo WordPress
+docker compose logs -f db           # Solo MySQL
 
 # Reiniciar un servicio específico
-docker-compose restart wordpress
+docker compose restart wordpress
 ```
 
 ### Comandos de WordPress (WP-CLI)
 
 ```bash
 # Listar plugins
-docker-compose exec wpcli wp plugin list --allow-root
+docker compose exec wpcli wp plugin list --allow-root
 
 # Activar plugin
-docker-compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
+docker compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
 
 # Desactivar plugin
-docker-compose exec wpcli wp plugin deactivate guiders-wp-plugin --allow-root
+docker compose exec wpcli wp plugin deactivate guiders-wp-plugin --allow-root
 
 # Actualizar WordPress
-docker-compose exec wpcli wp core update --allow-root
+docker compose exec wpcli wp core update --allow-root
 
 # Listar usuarios
-docker-compose exec wpcli wp user list --allow-root
+docker compose exec wpcli wp user list --allow-root
 
 # Crear usuario administrador
-docker-compose exec wpcli wp user create testuser test@example.com --role=administrator --user_pass=test123 --allow-root
+docker compose exec wpcli wp user create testuser test@example.com --role=administrator --user_pass=test123 --allow-root
 
 # Limpiar caché
-docker-compose exec wpcli wp cache flush --allow-root
+docker compose exec wpcli wp cache flush --allow-root
 
 # Exportar base de datos
-docker-compose exec wpcli wp db export /var/www/html/backup.sql --allow-root
+docker compose exec wpcli wp db export /var/www/html/backup.sql --allow-root
 
 # Importar base de datos
-docker-compose exec wpcli wp db import /var/www/html/backup.sql --allow-root
+docker compose exec wpcli wp db import /var/www/html/backup.sql --allow-root
 
 # Buscar y reemplazar URLs (útil para migraciones)
-docker-compose exec wpcli wp search-replace 'http://oldsite.com' 'http://localhost:8090' --allow-root
+docker compose exec wpcli wp search-replace 'http://oldsite.com' 'http://localhost:8090' --allow-root
 ```
 
 ### Instalar Plugins de Cookies para Pruebas
 
 ```bash
 # Moove GDPR (GDPR Cookie Compliance)
-docker-compose exec wpcli wp plugin install gdpr-cookie-compliance --activate --allow-root
+docker compose exec wpcli wp plugin install gdpr-cookie-compliance --activate --allow-root
 
 # Beautiful Cookie Banner
-docker-compose exec wpcli wp plugin install beautiful-and-responsive-cookie-consent --activate --allow-root
+docker compose exec wpcli wp plugin install beautiful-and-responsive-cookie-consent --activate --allow-root
 
 # Complianz GDPR
-docker-compose exec wpcli wp plugin install complianz-gdpr --activate --allow-root
+docker compose exec wpcli wp plugin install complianz-gdpr --activate --allow-root
 
 # CookieYes
-docker-compose exec wpcli wp plugin install cookie-law-info --activate --allow-root
+docker compose exec wpcli wp plugin install cookie-law-info --activate --allow-root
 
 # Cookie Notice
-docker-compose exec wpcli wp plugin install cookie-notice --activate --allow-root
+docker compose exec wpcli wp plugin install cookie-notice --activate --allow-root
 
 # WP Consent API
-docker-compose exec wpcli wp plugin install wp-consent-api --activate --allow-root
+docker compose exec wpcli wp plugin install wp-consent-api --activate --allow-root
 ```
 
 ### Acceso a la Base de Datos
 
 ```bash
 # Acceder a MySQL desde línea de comandos
-docker-compose exec db mysql -u wordpress -pwordpress wordpress
+docker compose exec db mysql -u wordpress -pwordpress wordpress
 
 # Hacer backup de la base de datos
-docker-compose exec db mysqldump -u wordpress -pwordpress wordpress > backup.sql
+docker compose exec db mysqldump -u wordpress -pwordpress wordpress > backup.sql
 
 # Restaurar backup
-cat backup.sql | docker-compose exec -T db mysql -u wordpress -pwordpress wordpress
+cat backup.sql | docker compose exec -T db mysql -u wordpress -pwordpress wordpress
 ```
 
 ### Desarrollo del Plugin
@@ -159,8 +167,8 @@ cat backup.sql | docker-compose exec -T db mysql -u wordpress -pwordpress wordpr
 # Cualquier cambio en tu carpeta local se refleja inmediatamente en WordPress
 
 # Si haces cambios, recarga el plugin:
-docker-compose exec wpcli wp plugin deactivate guiders-wp-plugin --allow-root
-docker-compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
+docker compose exec wpcli wp plugin deactivate guiders-wp-plugin --allow-root
+docker compose exec wpcli wp plugin activate guiders-wp-plugin --allow-root
 
 # O simplemente recarga la página en el navegador
 ```
@@ -179,8 +187,8 @@ wordpress:
 
 Luego reinicia:
 ```bash
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### Habilitar HTTPS (SSL)
@@ -209,13 +217,13 @@ EOF
 
 ```bash
 # Shell interactivo en WordPress
-docker-compose exec wordpress bash
+docker compose exec wordpress bash
 
 # Shell interactivo en MySQL
-docker-compose exec db bash
+docker compose exec db bash
 
 # Shell interactivo en WP-CLI
-docker-compose exec wpcli bash
+docker compose exec wpcli bash
 ```
 
 ## 🧪 Escenarios de Prueba
@@ -224,7 +232,7 @@ docker-compose exec wpcli bash
 
 ```bash
 # Instalar Moove GDPR
-docker-compose exec wpcli wp plugin install gdpr-cookie-compliance --activate --allow-root
+docker compose exec wpcli wp plugin install gdpr-cookie-compliance --activate --allow-root
 
 # Accede a: http://localhost:8090/wp-admin
 # Ve a: GDPR Cookie Compliance → Settings
@@ -239,7 +247,7 @@ docker-compose exec wpcli wp plugin install gdpr-cookie-compliance --activate --
 
 ```bash
 # Instalar Beautiful Cookie Banner
-docker-compose exec wpcli wp plugin install beautiful-and-responsive-cookie-consent --activate --allow-root
+docker compose exec wpcli wp plugin install beautiful-and-responsive-cookie-consent --activate --allow-root
 
 # Configura el banner desde: Settings → Beautiful Cookie Banner
 # Activa las categorías necesarias
@@ -252,8 +260,8 @@ docker-compose exec wpcli wp plugin install beautiful-and-responsive-cookie-cons
 
 ```bash
 # Instalar WP Consent API + un plugin compatible
-docker-compose exec wpcli wp plugin install wp-consent-api --activate --allow-root
-docker-compose exec wpcli wp plugin install complianz-gdpr --activate --allow-root
+docker compose exec wpcli wp plugin install wp-consent-api --activate --allow-root
+docker compose exec wpcli wp plugin install complianz-gdpr --activate --allow-root
 
 # Configura Complianz y verifica sincronización automática
 ```
@@ -264,46 +272,46 @@ docker-compose exec wpcli wp plugin install complianz-gdpr --activate --allow-ro
 
 ```bash
 # Verificar estado de servicios
-docker-compose ps
+docker compose ps
 
 # Ver logs de WordPress
-docker-compose logs -f wordpress
+docker compose logs -f wordpress
 
 # Reiniciar servicios
-docker-compose restart
+docker compose restart
 ```
 
 ### Error de conexión a la base de datos
 
 ```bash
 # Verificar que MySQL está listo
-docker-compose exec db mysqladmin ping -h localhost -u root -prootpassword
+docker compose exec db mysqladmin ping -h localhost -u root -prootpassword
 
 # Reiniciar MySQL
-docker-compose restart db
+docker compose restart db
 
 # Esperar a que esté healthy
-docker-compose ps
+docker compose ps
 ```
 
 ### El plugin no aparece en WordPress
 
 ```bash
 # Verificar que el plugin está montado
-docker-compose exec wordpress ls -la /var/www/html/wp-content/plugins/guiders-wp-plugin
+docker compose exec wordpress ls -la /var/www/html/wp-content/plugins/guiders-wp-plugin
 
 # Si no existe, verificar la ruta en docker-compose.yml
 # Debe ser: ./wordpress-plugin/guiders-wp-plugin
 
 # Recargar WordPress
-docker-compose restart wordpress
+docker compose restart wordpress
 ```
 
 ### Permisos de archivos
 
 ```bash
 # Corregir permisos (ejecutar desde el proyecto)
-docker-compose exec wordpress chown -R www-data:www-data /var/www/html
+docker compose exec wordpress chown -R www-data:www-data /var/www/html
 ```
 
 ### Puerto ya en uso
@@ -320,10 +328,10 @@ kill -9 <PID>
 
 ```bash
 # Eliminar contenedores y volúmenes (BORRA TODO)
-docker-compose down -v
+docker compose down -v
 
 # Eliminar imágenes (si quieres empezar desde cero)
-docker-compose down -v --rmi all
+docker compose down -v --rmi all
 
 # Limpiar Docker completamente (CUIDADO: afecta otros proyectos)
 docker system prune -a --volumes
@@ -355,7 +363,7 @@ Montajes en tiempo real:
 
 ```bash
 # Ver estado de salud de servicios
-docker-compose ps
+docker compose ps
 
 # Ver logs de health checks
 docker inspect guiders-wp-db | grep -A 10 Health
@@ -363,17 +371,17 @@ docker inspect guiders-wp-db | grep -A 10 Health
 
 ## 📝 Notas
 
-1. **Persistencia**: Los datos de WordPress y MySQL se guardan en volúmenes Docker. Sobreviven a `docker-compose down` pero se eliminan con `docker-compose down -v`.
+1. **Persistencia**: Los datos de WordPress y MySQL se guardan en volúmenes Docker. Sobreviven a `docker compose down` pero se eliminan con `docker compose down -v`.
 
 2. **Desarrollo del plugin**: Los cambios en `./wordpress-plugin/guiders-wp-plugin` se reflejan automáticamente en WordPress (no necesitas rebuild).
 
 3. **Rendimiento**: En Mac/Windows, el montaje de volúmenes puede ser lento. Considera usar Docker con backend nativo.
 
-4. **Múltiples entornos**: Puedes tener varios proyectos con docker-compose. Solo asegúrate de usar puertos diferentes.
+4. **Múltiples entornos**: Puedes tener varios proyectos con docker compose. Solo asegúrate de usar puertos diferentes.
 
 ## 🎯 Próximos Pasos
 
-1. ✅ Iniciar el entorno: `docker-compose up -d`
+1. ✅ Iniciar el entorno: `docker compose up -d`
 2. ✅ Configurar WordPress: http://localhost:8090
 3. ✅ Activar plugin Guiders
 4. ✅ Configurar API Key en: Settings → Guiders SDK
