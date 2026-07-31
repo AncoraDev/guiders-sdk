@@ -256,6 +256,11 @@ export interface CommercialAvailabilityConfig {
 	pollingInterval?: number;
 	/** Mostrar contador de comerciales disponibles (default: false) */
 	showBadge?: boolean;
+	/**
+	 * Si true (default), oculta el widget cuando no hay comerciales online.
+	 * Demo usa false para mantener el chat y mostrar copy de disponibilidad.
+	 */
+	hideWhenUnavailable?: boolean;
 	/** Mensaje cuando no hay comerciales disponibles */
 	fallbackMessage?: string;
 	/** Habilitar logging de debug (default: false) */

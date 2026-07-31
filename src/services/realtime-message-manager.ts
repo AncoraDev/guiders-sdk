@@ -63,8 +63,8 @@ export class RealtimeMessageManager {
 	// 🤖 Configuración de IA
 	private aiConfig: AIConfig = {
 		enabled: true,
-		showAIIndicator: true,
-		aiSenderName: 'Asistente IA',
+		showAIIndicator: false,
+		aiSenderName: 'Agente',
 		showTypingIndicator: true
 	};
 	// IDs de remitentes que se consideran IA por defecto

@@ -35,6 +35,8 @@ export interface AvailabilityResponse {
 	timestamp: string;
 	/** UUID of the resolved site */
 	siteId: string;
+	/** companyId — room WS = tenant:{tenantId} */
+	tenantId?: string;
 }
 
 export interface AvailabilityError {
@@ -116,13 +118,28 @@ export class CommercialAvailabilityService {
 			const data: AvailabilityResponse = await response.json();
 			this.log('📡 [CommercialAvailability] Respuesta recibida:', data);
 
-			// Store siteId as tenantId fallback if not already known
-			if (!this.tenantId && data.siteId) {
-				this.log('📡 [CommercialAvailability] ⚠️ tenantId no disponible; usando siteId como fallback para WS join:', data.siteId);
-				this.tenantId = data.siteId;
+			// Prefer companyId (tenantId) for WS room tenant:{companyId} — never siteId
+			if (data.tenantId) {
+				this.tenantId = data.tenantId;
+				try {
+					localStorage.setItem('tenantId', data.tenantId);
+				} catch {
+					/* ignore */
+				}
+				this.log('📡 [CommercialAvailability] tenantId (companyId) para WS:', data.tenantId);
+			} else if (!this.tenantId) {
+				debugWarn(
+					'📡 [CommercialAvailability] ⚠️ Sin tenantId en respuesta; WS join diferido'
+				);
 			}
 
 			this.notify(data.available, data.onlineCount);
+
+			// Re-join if we just learned the correct tenant room
+			if (this.tenantId && this.wsListenerRegistered) {
+				WebSocketService.getInstance().joinTenantRoom(this.tenantId);
+			}
+
 			return data;
 		} catch (error) {
 			debugError('📡 [CommercialAvailability] ❌ Error al consultar disponibilidad:', error);

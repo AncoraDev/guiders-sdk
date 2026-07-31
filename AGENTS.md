@@ -131,9 +131,33 @@ when consuming `presence:changed` events or aggregating `participants` from
 `GET /presence/chat/{chatId}`. Otherwise the indicator will reflect the
 visitor's own state instead of the agent's.
 
+**Offline banner**: `setShowOfflineBanner(true)` only enables the feature;
+visibility comes from commercial presence (`usePresence`). Do not force the
+banner on PENDING chats without an assigned agent (avoids false “Sin conexión”).
+
 📖 **Full reference**: [`docs/PRESENCE_SYSTEMS.md`](docs/PRESENCE_SYSTEMS.md) —
 covers REST endpoints, WebSocket events, state mapping, SDK wiring, and common
 pitfalls for both systems.
+
+## Site-entry → Console Pendientes
+
+After successful `executeIdentify()`, if there is no open chat
+(`PENDING` / `ASSIGNED` / `ACTIVE`), the SDK calls
+`ChatV2Service.createChatAuto({ metadata: { source: 'sdk-site-entry', … } })`
+→ `POST /v2/chats`. That empty PENDING chat appears in Console **Atención → Pendientes**.
+
+On the visitor’s **first message**, show once:
+`Hemos recibido tu mensaje. En breve te atenderemos.`
+(sessionStorage key `guiders_wait_msg_{chatId}`).
+
+## Commercial availability (tenant)
+
+Driven by **manual** Console toggle (not inactivity cron):
+
+- `POST /v2/commercials/availability` → `available` if `onlineCount ≥ 1`
+- WS `commercial:availability-changed`
+- Config `commercialAvailability.hideWhenUnavailable` (demo: `false` + system copy
+  “Soporte conectado” / “Soporte no disponible”)
 
 ## Code Style Guidelines
 

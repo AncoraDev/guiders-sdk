@@ -483,7 +483,9 @@ export class ChatV2Service {
 	}
 
 	/**
-	 * Crea un chat V2 usando el endpoint mejorado POST /v2/chats (ID generado por el backend)
+	 * Crea un chat V2 usando POST /v2/chats (ID generado por el backend).
+	 * Usado también tras identify (site-entry) para colocar al visitante en Pendientes
+	 * sin mensaje inicial (`metadata.source: 'sdk-site-entry'`).
 	 * @param payload Datos del chat
 	 * @returns Promise con { chatId, position } — ID del chat creado y posición en la cola de espera
 	 */

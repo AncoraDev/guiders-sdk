@@ -16,9 +16,9 @@ export interface MessageRenderData {
 
 // 🤖 Configuración de IA para el renderer (singleton)
 let aiRenderConfig: AIConfig = {
-    enabled: true,
-    showAIIndicator: true,
-    aiSenderName: 'Asistente IA',
+    enabled: false,
+    showAIIndicator: false,
+    aiSenderName: 'Agente',
     showTypingIndicator: true
 };
 
@@ -54,31 +54,18 @@ export class MessageRenderer {
     public static createMessageElement(data: MessageRenderData): HTMLDivElement {
         const messageDiv = document.createElement('div');
         const isUserMessage = data.sender === 'user';
-        const isAIMessage = data.isAI === true || data.sender === 'ai';
 
         // ✅ USAR CLASES COMPATIBLES CON ChatUI - estructura esperada
-        let wrapperClasses = isUserMessage
+        // Sin UI de IA: mensajes de bot/IA se renderizan como agente.
+        const wrapperClasses = isUserMessage
             ? 'chat-message-wrapper chat-message-user-wrapper'
             : 'chat-message-wrapper chat-message-other-wrapper';
-
-        // 🤖 Añadir clase de IA si corresponde
-        if (isAIMessage) {
-            wrapperClasses += ' chat-message-ai-wrapper';
-        }
 
         messageDiv.className = wrapperClasses;
 
         // Agregar ID si está disponible
         if (data.id) {
             messageDiv.setAttribute('data-message-id', data.id);
-        }
-
-        // 🤖 Marcar como mensaje de IA
-        if (isAIMessage) {
-            messageDiv.setAttribute('data-ai-message', 'true');
-            if (data.aiMetadata?.model) {
-                messageDiv.setAttribute('data-ai-model', data.aiMetadata.model);
-            }
         }
 
         // ✅ Agregar timestamp para date separators
@@ -94,17 +81,9 @@ export class MessageRenderer {
         contentWrapper.className = 'message-content-wrapper';
 
         const chatMessage = document.createElement('div');
-        let messageClasses = isUserMessage ? 'chat-message chat-message-user' : 'chat-message chat-message-other';
-        if (isAIMessage) {
-            messageClasses += ' chat-message-ai';
-        }
-        chatMessage.className = messageClasses;
-
-        // 🤖 Header de IA (solo si está habilitado)
-        if (isAIMessage && aiRenderConfig.showAIIndicator !== false) {
-            const aiHeader = this.createAIHeader();
-            chatMessage.appendChild(aiHeader);
-        }
+        chatMessage.className = isUserMessage
+            ? 'chat-message chat-message-user'
+            : 'chat-message chat-message-other';
 
         const messageText = document.createElement('span');
         messageText.className = 'message-text';
@@ -134,7 +113,7 @@ export class MessageRenderer {
         messageDiv.appendChild(contentWrapper);
 
         // Aplicar estilos modernos formales
-        this.applyModernMessageStyles(messageDiv, isUserMessage, isAIMessage);
+        this.applyModernMessageStyles(messageDiv, isUserMessage, false);
 
         return messageDiv;
     }

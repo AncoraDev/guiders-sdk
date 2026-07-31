@@ -179,6 +179,8 @@ export class TrackingPixelSDK {
 	private mobileDetectionConfig?: MobileDetectionConfig;
 	private activeHoursValidator?: ActiveHoursValidator;
 	private identifyExecuted: boolean = false; // Flag para prevenir múltiples llamadas a identify()
+	/** Evita doble createChatAuto en el mismo load tras identify. */
+	private siteEntryPendingEnsured: boolean = false;
 	private wsService: WebSocketService;
 	private realtimeMessageManager: RealtimeMessageManager;
 	private presenceManager: PresenceManager | null = null;
@@ -892,6 +894,8 @@ export class TrackingPixelSDK {
 						isNewChat: result.isNewChat
 					});
 
+					this.showVisitorWaitingMessageOnce(chat, result.chat.id);
+
 					// Disparar evento personalizado para dev random messages
 					if (typeof window !== 'undefined') {
 						const customEvent = new CustomEvent('guidersMessageSent', {
@@ -984,6 +988,9 @@ export class TrackingPixelSDK {
 				// Hay chat activo Y NO queremos crear uno nuevo - enviar mensaje normalmente
 				debugLog('[TrackingPixelSDK] Chat activo encontrado, enviando mensaje via realtimeMessageManager');
 				await this.realtimeMessageManager.sendMessage(message, 'text');
+				if (this.chatUI) {
+					this.showVisitorWaitingMessageOnce(this.chatUI, currentChatId);
+				}
 			} else {
 				// Queremos crear un chat nuevo (pendingNewChat=true) o no hay chat activo
 				debugLog('[TrackingPixelSDK] FORZANDO creación de chat nuevo...');
@@ -1020,6 +1027,7 @@ export class TrackingPixelSDK {
 				const newChatId = result.chat.id;
 				if (this.chatUI) {
 					this.chatUI.setChatId(newChatId);
+					this.showVisitorWaitingMessageOnce(this.chatUI, newChatId);
 				}
 				this.realtimeMessageManager.setCurrentChat(newChatId);
 
@@ -1196,6 +1204,9 @@ export class TrackingPixelSDK {
 				// Hay chat activo - enviar mensaje normalmente
 				debugLog('[TrackingPixelSDK] Chat activo encontrado, enviando mensaje');
 				await this.realtimeMessageManager.sendMessage(message, 'text');
+				if (this.chatUI) {
+					this.showVisitorWaitingMessageOnce(this.chatUI, currentChatId);
+				}
 			} else {
 				// No hay chat activo - usar sendMessageSmart para crear chat + mensaje
 				debugLog('[TrackingPixelSDK] No hay chat activo, creando chat con mensaje...');
@@ -1219,6 +1230,7 @@ export class TrackingPixelSDK {
 				const newChatId = result.chat.id;
 				if (this.chatUI) {
 					this.chatUI.setChatId(newChatId);
+					this.showVisitorWaitingMessageOnce(this.chatUI, newChatId);
 				}
 				this.realtimeMessageManager.setCurrentChat(newChatId);
 
@@ -1444,27 +1456,27 @@ export class TrackingPixelSDK {
 				}
 
 				// Los chats ya se cargan automáticamente en identitySignal.identify()
-				const hasExistingChats = result.chats?.chats && result.chats.chats.length > 0;
+				const openStatuses = new Set(['PENDING', 'ASSIGNED', 'ACTIVE']);
+				const openChat = result.chats?.chats?.find((c) =>
+					openStatuses.has(String(c.status || '').toUpperCase())
+				);
+				const hasExistingChats = !!(result.chats?.chats && result.chats.chats.length > 0);
 
-				if (hasExistingChats && result.chats) {
+				if (openChat?.id) {
+					localStorage.setItem('guiders_recent_chats', JSON.stringify(result.chats!.chats));
+					ChatSessionStore.getInstance().setCurrent(openChat.id);
+					if (this.chatUI) {
+						this.chatUI.setChatId(openChat.id);
+						this.chatUI.setActiveChatForUnread(openChat.id);
+					}
+					debugLog('[TrackingPixelSDK] ♻️ Chat abierto reutilizado:', openChat.id, openChat.status);
+				} else if (hasExistingChats && result.chats) {
 					localStorage.setItem('guiders_recent_chats', JSON.stringify(result.chats.chats));
 					ChatSessionStore.getInstance().setCurrent(result.chats.chats![0].id);
-					debugLog('[TrackingPixelSDK] ♻️ Chat reutilizable (más reciente) guardado:', result.chats.chats![0].id);
-
-					// 🔧 ELIMINADO: No cargar mensajes automáticamente al identificar visitante
-					// Solo cargar cuando el usuario abra el chat para evitar peticiones innecesarias
-					// this.loadInitialMessagesFromFirstChat(result.chats.chats[0]);
-
-					// 📬 Cargar mensajes no leídos para mostrar badge al refrescar la página
-					if (this.chatUI && result.chats.chats![0].id) {
-						this.chatUI.setActiveChatForUnread(result.chats.chats![0].id);
-						debugLog('📬 [TrackingPixelSDK] Cargando mensajes no leídos al inicializar con chat existente');
-					}
+					debugLog('[TrackingPixelSDK] ♻️ Chat reciente (cerrado) en store:', result.chats.chats![0].id);
 				} else {
-					// No hay chats previos, mostrar mensaje de bienvenida automáticamente
 					debugLog('[TrackingPixelSDK] 💬 No hay chats previos, mostrando mensaje de bienvenida automáticamente');
 					if (this.chatUI && this.chatUI.checkAndAddInitialMessages) {
-						// Pequeño delay para asegurar que el chat esté completamente inicializado
 						setTimeout(() => {
 							if (this.chatUI && this.chatUI.checkAndAddInitialMessages) {
 								this.chatUI.checkAndAddInitialMessages();
@@ -1475,8 +1487,6 @@ export class TrackingPixelSDK {
 				}
 
 				// 📡 Inicializar WebSocket SIEMPRE para recibir notificaciones proactivas
-				// IMPORTANTE: Esto debe ejecutarse independientemente de si hay chats o no
-				// para poder recibir el evento 'chat:created' cuando un comercial cree un chat proactivamente
 				debugLog('📡 [TrackingPixelSDK] 🔍 DEBUG: Verificando condiciones WebSocket:', {
 					hasChatUI: !!this.chatUI,
 					isConnected: this.wsService.isConnected(),
@@ -1486,15 +1496,23 @@ export class TrackingPixelSDK {
 				if (this.chatUI && !this.wsService.isConnected()) {
 					debugLog('📡 [TrackingPixelSDK] 🚀 Inicializando WebSocket para notificaciones en tiempo real');
 					this.initializeWebSocketConnection(this.chatUI);
-
-					// Si hay chat existente, configurarlo en el RealtimeMessageManager
-					if (hasExistingChats && result.chats && result.chats.chats![0].id) {
-						this.realtimeMessageManager.setCurrentChat(result.chats.chats![0].id);
-						debugLog('📡 [TrackingPixelSDK] ✅ WebSocket configurado para chat existente:', result.chats.chats![0].id);
-					} else {
-						debugLog('📡 [TrackingPixelSDK] ✅ WebSocket configurado para recibir notificaciones de chats nuevos');
-					}
 				}
+
+				const activeChatId =
+					openChat?.id ||
+					(this.chatUI?.getChatId?.() ?? ChatSessionStore.getInstance().getCurrent());
+				if (activeChatId) {
+					this.realtimeMessageManager.setCurrentChat(activeChatId);
+					if (this.wsService.isConnected()) {
+						this.wsService.joinChatRoom(activeChatId);
+					}
+					debugLog('📡 [TrackingPixelSDK] ✅ WebSocket room para chat:', activeChatId);
+				} else {
+					debugLog('📡 [TrackingPixelSDK] ✅ WebSocket listo; creando PENDING de entrada al sitio…');
+				}
+
+				// Al entrar en la web: asegurar chat PENDING → Console Pendientes
+				await this.ensureSiteEntryPendingChat(!!openChat);
 			}
 		} catch (e) {
 			// No resetear el flag si es una operación cancelada
@@ -2091,30 +2109,51 @@ export class TrackingPixelSDK {
 		});
 
 		// Register callback for availability changes
+		// hideWhenUnavailable (default true): oculta el widget si no hay soporte.
+		// Demo usa hideWhenUnavailable:false y muestra copy "Soporte conectado".
+		const hideWhenUnavailable =
+			this.commercialAvailabilityConfig?.hideWhenUnavailable !== false;
+		let lastSupportAvailable: boolean | null = null;
+
 		this.commercialAvailabilityService.onAvailabilityChanged((available, count) => {
 			debugLog(`📡 [CommercialAvailability] Estado cambió: ${available} (${count} online)`);
 
-			if (available) {
-				// Hay comerciales disponibles - mostrar chat y botón
+			// Sincronizar presencia in-chat (header / banner) con disponibilidad tenant
+			const presenceSvc = this.presenceManager?.getService();
+			if (available && count >= 1) {
+				presenceSvc?.applyCommercialStatus?.('online');
 				chat.showToggleButton();
-
-				// Actualizar badge si está habilitado
-				if (this.commercialAvailabilityConfig?.showBadge && count > 0) {
+				if (this.commercialAvailabilityConfig?.showBadge) {
 					chat.updateUnreadCount(count);
-				} else {
-					chat.hideUnreadBadge();
 				}
+				if (lastSupportAvailable !== true) {
+					chat.addSystemMessage(
+						count === 1
+							? 'Soporte conectado — hay una persona disponible'
+							: `Soporte conectado — ${count} personas disponibles`
+					);
+				}
+				lastSupportAvailable = true;
 			} else {
-				// No hay comerciales disponibles - ocultar chat y botón
-				debugLog('📡 [CommercialAvailability] No hay comerciales disponibles - ocultando chat');
-
-				// Ocultar el chat si está abierto
-				if (chat.isVisible()) {
-					chat.hide();
+				presenceSvc?.applyCommercialStatus?.('offline');
+				chat.hideUnreadBadge();
+				if (hideWhenUnavailable) {
+					debugLog(
+						'📡 [CommercialAvailability] Sin soporte — ocultando chat'
+					);
+					if (chat.isVisible()) {
+						chat.hide();
+					}
+					chat.hideToggleButton();
+				} else {
+					chat.showToggleButton();
+					if (lastSupportAvailable !== false) {
+						chat.addSystemMessage(
+							'Soporte no disponible en este momento'
+						);
+					}
 				}
-
-				// Ocultar el botón de toggle
-				chat.hideToggleButton();
+				lastSupportAvailable = false;
 			}
 		});
 
@@ -2626,6 +2665,85 @@ export class TrackingPixelSDK {
 		}
 	}
 
+	/**
+	 * Tras identify: si no hay chat abierto, crea PENDING (Console → Pendientes).
+	 * No abre el widget ni muestra mensaje de espera (eso va al primer mensaje del visitante).
+	 */
+	private async ensureSiteEntryPendingChat(hasOpenChat: boolean): Promise<void> {
+		if (hasOpenChat || this.siteEntryPendingEnsured) {
+			return;
+		}
+		this.siteEntryPendingEnsured = true;
+
+		try {
+			const existingId =
+				this.chatUI?.getChatId?.() || ChatSessionStore.getInstance().getCurrent();
+			if (existingId) {
+				debugLog('[TrackingPixelSDK] ⏭️ PENDING omitido: ya hay chatId', existingId);
+				return;
+			}
+
+			debugLog('[TrackingPixelSDK] 🆕 createChatAuto (site-entry) → cola Pendientes');
+			const created = await ChatV2Service.getInstance().createChatAuto({
+				metadata: {
+					source: 'sdk-site-entry',
+					department: 'general',
+					initialUrl:
+						typeof window !== 'undefined' ? window.location.href : undefined,
+					userAgent:
+						typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+				},
+			});
+
+			if (!created?.chatId) {
+				debugLog('[TrackingPixelSDK] ⚠️ createChatAuto sin chatId');
+				return;
+			}
+
+			ChatSessionStore.getInstance().setCurrent(created.chatId);
+			if (this.chatUI) {
+				this.chatUI.setChatId(created.chatId);
+				this.chatUI.setActiveChatForUnread?.(created.chatId);
+			}
+			this.realtimeMessageManager.setCurrentChat(created.chatId);
+			if (this.wsService.isConnected()) {
+				this.wsService.joinChatRoom(created.chatId);
+			}
+			debugLog(
+				'[TrackingPixelSDK] ✅ PENDING site-entry creado:',
+				created.chatId,
+				'posición',
+				created.position
+			);
+		} catch (error) {
+			// Permitir reintento en el siguiente identify real si falló la creación
+			this.siteEntryPendingEnsured = false;
+			debugLog('[TrackingPixelSDK] ❌ Error creando PENDING site-entry:', error);
+		}
+	}
+
+	/**
+	 * Mensaje de sistema una vez por chat tras el primer envío del visitante.
+	 */
+	private showVisitorWaitingMessageOnce(
+		chat: { addSystemMessage?: (text: string) => void },
+		chatId: string | undefined
+	): void {
+		if (!chatId || !chat.addSystemMessage) return;
+		const key = `guiders_wait_msg_${chatId}`;
+		try {
+			if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(key)) {
+				return;
+			}
+			sessionStorage?.setItem(key, '1');
+		} catch {
+			// sessionStorage no disponible: mostrar igual (mejor UX que silenciar)
+		}
+		chat.addSystemMessage(
+			'Hemos recibido tu mensaje. En breve te atenderemos.'
+		);
+	}
+
 	// ========== Métodos WebSocket para Comunicación Bidireccional ==========
 
 	/**
@@ -2987,12 +3105,14 @@ export class TrackingPixelSDK {
 					const currentChatId = chat.getChatId();
 					if (currentChatId) {
 						await ChatV2Service.getInstance().sendMessage(currentChatId, message, 'text');
+						this.showVisitorWaitingMessageOnce(chat, currentChatId);
 					} else {
 						const result = await ChatV2Service.getInstance().createChatWithMessage(
 							{},
 							{ content: message, type: 'text' }
 						);
 						chat.setChatId(result.chatId);
+						this.showVisitorWaitingMessageOnce(chat, result.chatId);
 					}
 				} catch (error) {
 				}

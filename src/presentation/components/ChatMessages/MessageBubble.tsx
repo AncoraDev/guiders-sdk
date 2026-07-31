@@ -68,11 +68,11 @@ function formatTime(timestamp?: number): string {
     });
 }
 
-function resolveAuthorType(sender: string, isAI?: boolean): AuthorType {
+function resolveAuthorType(sender: string, _isAI?: boolean): AuthorType {
     if (sender === 'user')    return 'own';
     if (sender === 'system')  return 'system';
     if (sender === 'consent') return 'consent';
-    if (isAI === true || sender === 'ai') return 'ai';
+    // No distinguimos IA en UI: se muestra como agente.
     return 'human';
 }
 
@@ -84,14 +84,7 @@ function resolveAuthorType(sender: string, isAI?: boolean): AuthorType {
  * Mini-avatar 20×20px shown inline for human and ai message types.
  * Hidden from AT with aria-hidden.
  */
-function AuthorAvatar({ type, initial }: { type: 'human' | 'ai'; initial?: string }) {
-    if (type === 'ai') {
-        return (
-            <div style={avatarStyle('ai')} aria-hidden="true">
-                <span>✦</span>
-            </div>
-        );
-    }
+function AuthorAvatar({ initial }: { type?: 'human' | 'ai'; initial?: string }) {
     return (
         <div style={avatarStyle('human')} aria-hidden="true">
             <span>{initial ?? '?'}</span>
@@ -172,17 +165,17 @@ export function MessageBubble({
 
     // ── regular ───────────────────────────────────────────────────────────────
     const isOwn = resolved === 'own';
-    const showAvatar = (resolved === 'human' || resolved === 'ai') && isLastInGroup;
+    const showAvatar = resolved === 'human' && isLastInGroup;
     const timeText = formatTime(message.timestamp);
-    const displayName = authorName ?? (isOwn ? 'Tú' : resolved === 'ai' ? 'Asistente IA' : 'Agente');
+    const displayName = authorName ?? (isOwn ? 'Tú' : 'Agente');
 
     const wrapperClass = isOwn
         ? 'chat-message-wrapper chat-message-user-wrapper'
-        : `chat-message-wrapper chat-message-other-wrapper${resolved === 'ai' ? ' chat-message-ai-wrapper' : ''}`;
+        : 'chat-message-wrapper chat-message-other-wrapper';
 
     const messageClass = isOwn
         ? 'chat-message chat-message-user'
-        : `chat-message chat-message-other${resolved === 'ai' ? ' chat-message-ai' : ''}`;
+        : 'chat-message chat-message-other';
 
     return (
         <div
@@ -193,14 +186,13 @@ export function MessageBubble({
             {/* Mini-avatar placeholder (keeps bubble aligned when no avatar) */}
             {!isOwn && (
                 showAvatar
-                    ? <AuthorAvatar type={resolved as 'human' | 'ai'} initial={authorInitial} />
+                    ? <AuthorAvatar initial={authorInitial} />
                     : <div style={{ width: '20px', flexShrink: 0 }} />
             )}
 
             <div style={contentColumnStyle(isOwn)}>
-                {/* Author name label — shown for human/ai on first-in-group */}
-                {!isOwn && isLastInGroup && (resolved === 'human' || resolved === 'ai') && (
-                    <span style={authorNameStyle(resolved)}>{displayName}</span>
+                {!isOwn && isLastInGroup && resolved === 'human' && (
+                    <span style={authorNameStyle('human')}>{displayName}</span>
                 )}
                 <div class={messageClass} style={messageStyle(resolved, isLastInGroup)}>
                     <span style={messageTextStyle}>{cleaned}</span>

@@ -61,8 +61,18 @@ export const isCreatingChatSignal = signal<boolean>(false);
 /** @writer bridge|hooks — initial-message-load spinner; written by usePagination + bridge. */
 export const isLoadingInitialMessagesSignal = signal<boolean>(false);
 
-/** @writer bridge|hooks — current presence; written by usePresence + bridge resets. */
+/**
+ * @writer bridge|hooks — soporte humano disponible en el chat
+ * (comercial asignado u otro comercial online del tenant).
+ * Escrito por usePresence + bridge resets. Drive el banner offline.
+ */
 export const presenceStatusSignal = signal<PresenceUiStatus>('offline');
+
+/**
+ * @writer hooks — presencia del comercial asignado (null si no hay asignado).
+ * El header muestra avatar humano solo si esto no es offline.
+ */
+export const assignedPresenceStatusSignal = signal<PresenceUiStatus | null>(null);
 
 /** @writer bridge|hooks — offline banner visibility; written by usePresence + bridge config. */
 export const showOfflineBannerSignal = signal<boolean>(false);

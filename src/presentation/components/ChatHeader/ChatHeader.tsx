@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'preact/hooks';
-import { h } from 'preact';
 import { ChatUIOptions } from '../../types/chat-types';
 import {
     chatDetailSignal,
     chatSelectorEnabledSignal,
     hasAssignedCommercialSignal,
     isShowingChatListSignal,
+    assignedPresenceStatusSignal,
+    presenceStatusSignal,
 } from '../../signals/chatState';
 import { toggleClickedSignal, toggleChatOpenSignal } from '../../signals/toggleState';
 import { generateInitials } from '../../utils/chat-utils';
@@ -19,88 +20,71 @@ interface ChatHeaderProps {
     options: ChatUIOptions;
 }
 
-type AuthorType = 'human' | 'ai';
-
-// ---------------------------------------------------------------------------
-// AuthorBadge
-// ---------------------------------------------------------------------------
-
-function AuthorBadge({ type }: { type: AuthorType }) {
-    const isAI = type === 'ai';
-    const style: h.JSX.CSSProperties = {
-        fontSize: 'var(--gds-font-size-xs, 11px)',
-        fontWeight: 600,
-        color: isAI ? 'var(--gds-color-author-ai)' : 'var(--gds-color-author-human)',
-        background: isAI ? 'var(--gds-color-author-ai-soft)' : 'var(--gds-color-author-human-soft)',
-        padding: '2px 6px',
-        borderRadius: 'var(--gds-radius-pill)',
-        letterSpacing: '0.01em',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '3px',
-        flexShrink: 0,
-    };
-    return (
-        <span style={style} aria-label={isAI ? 'Asistente IA' : 'Agente humano'}>
-            {isAI ? '✦ IA' : '● Agente'}
-        </span>
-    );
-}
+const NO_AGENTS_SUBTITLE =
+    'No hay agentes disponibles ahora mismo. Puedes enviarnos un mensaje y avisamos al equipo de soporte.';
 
 // ---------------------------------------------------------------------------
 // ChatHeader
 // ---------------------------------------------------------------------------
 
 /**
- * ChatHeader — Story 6.5:
- *   - AuthorBadge "IA" (purple) or "Agente" (blue) derived from hasAssignedCommercialSignal
- *   - Crossfade 150ms when interlocutor changes
- *   - Tokens only, zero hardcoded colors
+ * Header del chat:
+ * - Avatar del comercial solo si el asignado está online/away/busy.
+ * - Sin agentes online → icono estándar + aviso en subtítulo.
  */
 export function ChatHeader({ options }: ChatHeaderProps) {
     const hasCommercial = hasAssignedCommercialSignal.value;
     const chatDetail = chatDetailSignal.value;
     const commercial = chatDetail?.assignedCommercial;
+    const assignedPresence = assignedPresenceStatusSignal.value;
+    const supportOnline = presenceStatusSignal.value !== 'offline';
     const showBackBtn = chatSelectorEnabledSignal.value || !!(options.chatSelector?.enabled);
     const title = options.title ?? 'Chat';
 
-    // Crossfade state: track displayed authorType to animate transitions
-    const resolvedType: AuthorType = hasCommercial ? 'human' : 'ai';
-    const [displayState, setDisplayState] = useState<{ type: AuthorType; opacity: number }>({
-        type: resolvedType,
+    const showHumanAvatar =
+        hasCommercial &&
+        !!commercial &&
+        assignedPresence != null &&
+        assignedPresence !== 'offline';
+
+    const showNoAgentsMessage = !showHumanAvatar && !supportOnline;
+
+    const [displayState, setDisplayState] = useState<{
+        showHuman: boolean;
+        opacity: number;
+    }>({
+        showHuman: showHumanAvatar,
         opacity: 1,
     });
 
     useEffect(() => {
-        if (resolvedType === displayState.type) return undefined;
-        // Fade out current badge, then switch type
+        if (showHumanAvatar === displayState.showHuman) return undefined;
         setDisplayState(prev => ({ ...prev, opacity: 0 }));
         const t = setTimeout(() => {
-            setDisplayState({ type: resolvedType, opacity: 1 });
+            setDisplayState({ showHuman: showHumanAvatar, opacity: 1 });
         }, 150);
         return () => clearTimeout(t);
-    // displayState.type is intentionally excluded: we only react to resolvedType changes.
-    // Using a functional updater for setDisplayState avoids stale closure on prev state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resolvedType]);
+    }, [showHumanAvatar]);
 
-    // Patch #25: closing via header goes through toggle pipeline
     const handleClose = () => {
         if (toggleChatOpenSignal.peek()) {
             toggleClickedSignal.value = toggleClickedSignal.peek() + 1;
         }
     };
 
-    const isHumanState = displayState.type === 'human';
-    const humanCommercial = isHumanState ? commercial : undefined;
+    const humanCommercial =
+        displayState.showHuman ? commercial : undefined;
 
     return (
         <div
-            class="chat-header"
+            class={`chat-header${showNoAgentsMessage ? ' chat-header--no-agents' : ''}`}
             role="banner"
-            aria-label={resolvedType === 'human'
+            aria-label={showHumanAvatar
                 ? `Chat con ${commercial?.name ?? 'Agente'}`
-                : `Chat con Asistente IA`}
+                : showNoAgentsMessage
+                    ? 'Chat — sin agentes disponibles'
+                    : 'Chat'}
         >
             {showBackBtn && (
                 <button
@@ -114,7 +98,6 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                 </button>
             )}
 
-            {/* Crossfade wrapper */}
             <div
                 class="chat-header-main"
                 style={{
@@ -124,7 +107,7 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                     minWidth: 0,
                 }}
             >
-                {isHumanState && humanCommercial
+                {humanCommercial
                     ? (
                         <CommercialAvatar
                             name={humanCommercial.name}
@@ -143,7 +126,11 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                             </div>
                             <div class="chat-header-title-container">
                                 <span class="chat-header-title">{title}</span>
-                                <AuthorBadge type={displayState.type} />
+                                {showNoAgentsMessage && (
+                                    <span class="chat-header-subtitle" role="status">
+                                        {NO_AGENTS_SUBTITLE}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     )

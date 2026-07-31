@@ -15,14 +15,12 @@ import { resolveTheme } from '../../styles/themes/index';
 import { ChatHeader } from '../ChatHeader';
 import { ChatMessages } from '../ChatMessages';
 import { ChatInput } from '../ChatInput';
-import { AIDisclaimer } from '../AIDisclaimer';
 import { OfflineBanner } from '../OfflineBanner';
 import { QuickActions } from '../QuickActions';
 import { ChatListView } from '../ChatListView';
 import { ToggleButton } from '../ToggleButton';
 import { usePresence } from '../../hooks/usePresence';
 import { useCommercialPresenceWebSocket } from '../../hooks/useCommercialPresenceMap';
-import { hasAssignedCommercialSignal } from '../../signals/chatState';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -65,8 +63,6 @@ export function ChatWidget({ options }: ChatWidgetProps) {
     const visible = isVisibleSignal.value;
     const isShowingList = isShowingChatListSignal.value;
     const quickActionsConfig = resolveQuickActionsConfig(options);
-    // Show AI disclaimer when no human agent is assigned (EU AI Act Art. 50)
-    const disclaimerVisible = !hasAssignedCommercialSignal.value;
 
     // Subscribe to PresenceService updates
     usePresence();
@@ -275,7 +271,6 @@ export function ChatWidget({ options }: ChatWidgetProps) {
                                 <QuickActions config={quickActionsConfig} />
                             )}
                             <ChatInput />
-                            <AIDisclaimer visible={disclaimerVisible} />
                         </>
                     )
                 }

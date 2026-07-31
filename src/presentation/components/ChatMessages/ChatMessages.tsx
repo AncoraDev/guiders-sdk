@@ -47,8 +47,8 @@ function messageKey(msg: ChatMessageParams, index: number): string {
 function resolveGroupKey(msg: ChatMessageParams): string {
     if (msg.sender === 'system')  return 'system';
     if (msg.sender === 'consent') return 'consent';
-    if (msg.isAI === true || msg.sender === 'ai') return 'ai';
     if (msg.sender === 'user') return 'user';
+    // Mensajes IA/agente se agrupan como humano (sin UI de IA).
     return `human:${msg.senderId ?? msg.sender}`;
 }
 

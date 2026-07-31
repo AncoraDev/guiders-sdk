@@ -43,10 +43,10 @@
         fallbackMessage: '🕐 Nuestro chat está disponible de 8:00-17:00 (hora de Madrid). ¡Vuelve durante nuestros horarios de atención!'
       },
       commercialAvailability: {
-        enabled: false,         // ✅ DESACTIVADO para desarrollo (puede ocultar chat)
-        pollingInterval: 10,    // Consultar cada 10 segundos (rápido para demo)
-        showBadge: true,        // Mostrar número de comerciales disponibles
-        debug: true             // Habilitar logs de debug
+        enabled: true,          // Disponibilidad real según comerciales Conectados en Console
+        hideWhenUnavailable: false, // Mantener chat visible; copy "Soporte conectado / no disponible"
+        showBadge: true,        // Badge con nº de comerciales online
+        debug: true
       },
       trackingV2: {
         enabled: true,          // Habilitar tracking V2

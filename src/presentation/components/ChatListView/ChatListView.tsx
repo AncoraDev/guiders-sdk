@@ -1,7 +1,12 @@
 import { chatIdSignal, isShowingChatListSignal, isCreatingChatSignal } from '../../signals';
 import { chatSwitchRequestSignal, newChatRequestSignal } from '../../signals/actionState';
 import { messagesSignal } from '../../signals/messagesState';
-import { chatDetailSignal, presenceStatusSignal, lastKnownChatStatusSignal } from '../../signals/chatState';
+import {
+    chatDetailSignal,
+    presenceStatusSignal,
+    assignedPresenceStatusSignal,
+    lastKnownChatStatusSignal,
+} from '../../signals/chatState';
 import { LoadingIndicator } from '../ChatMessages/LoadingIndicator';
 import { ChatListItem } from './ChatListItem';
 import { useChatList } from '../../hooks/useChatList';
@@ -39,6 +44,7 @@ export function ChatListView() {
             chatDetailSignal.value = { ...chatDetailSignal.value, assignedCommercial: undefined };
         }
         presenceStatusSignal.value = 'offline';
+        assignedPresenceStatusSignal.value = null;
         lastKnownChatStatusSignal.value = null;
         newChatRequestSignal.value = newChatRequestSignal.peek() + 1;
         isShowingChatListSignal.value = false;

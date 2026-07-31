@@ -1,5 +1,6 @@
-import { presenceStatusSignal } from '../../signals/chatState';
+import { assignedPresenceStatusSignal, presenceStatusSignal } from '../../signals/chatState';
 import { PresenceIndicator, PRESENCE_LABEL } from '../PresenceIndicator';
+import type { PresenceUiStatus } from '../../types/presence-types';
 
 // ---------------------------------------------------------------------------
 // CommercialAvatar
@@ -12,7 +13,8 @@ interface CommercialAvatarProps {
 }
 
 export function CommercialAvatar({ name, avatarUrl, initials }: CommercialAvatarProps) {
-    const status = presenceStatusSignal.value;
+    const status: PresenceUiStatus =
+        assignedPresenceStatusSignal.value ?? presenceStatusSignal.value;
     const statusLabel = PRESENCE_LABEL[status];
 
     return (

@@ -22,6 +22,7 @@ export {
     isCreatingChatSignal,
     isLoadingInitialMessagesSignal,
     presenceStatusSignal,
+    assignedPresenceStatusSignal,
     showOfflineBannerSignal,
     offlineBannerEnabledSignal,
     isTypingSignal,

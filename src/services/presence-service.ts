@@ -387,6 +387,24 @@ export class PresenceService {
   }
 
   /**
+   * Aplica un estado de comercial al UI (p.ej. cuando availability tenant pasa a 0).
+   * No requiere chatId — usePresence / mapa de comerciales reaccionan igual.
+   */
+  public applyCommercialStatus(
+    status: 'online' | 'offline' | 'away' | 'busy',
+    commercialId = 'tenant-availability',
+  ): void {
+    const previousStatus = status === 'offline' ? 'online' : 'offline';
+    this.notifyPresenceChange({
+      userId: commercialId,
+      userType: 'commercial',
+      status,
+      previousStatus,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  /**
    * Suscribe a cambios de typing
    */
   public onTypingChanged(callback: TypingChangeCallback): () => void {

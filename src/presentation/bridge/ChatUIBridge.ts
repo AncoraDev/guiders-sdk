@@ -716,13 +716,15 @@ export class ChatUIBridge {
     }
 
     /**
-     * Patch #4: when the offline banner is enabled, also set showOfflineBannerSignal
-     * to true so the banner appears immediately. Previously only the disable path
-     * was reactive, leaving the enable path silent until another trigger.
+     * Habilita/deshabilita el banner de comercial offline.
+     * No fuerza la visibilidad al activar: usePresence decide según presencia real.
+     * (Forzar show=true al enable provocaba "Sin conexión" en chats PENDING sin agente.)
      */
     setShowOfflineBanner(enabled: boolean): void {
         offlineBannerEnabledSignal.value = enabled;
-        showOfflineBannerSignal.value = enabled;
+        if (!enabled) {
+            showOfflineBannerSignal.value = false;
+        }
     }
 
     // -------------------------------------------------------------------------
