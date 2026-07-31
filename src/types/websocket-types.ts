@@ -43,8 +43,15 @@ export interface RealtimeMessage {
 	type: MessageType;        // Tipo de mensaje
 	senderId: string;         // UUID del emisor
 	senderName: string;       // Nombre del emisor
+	senderType?: 'VISITOR' | 'COMMERCIAL' | 'SYSTEM' | string;
 	sentAt: string;           // ISO 8601 timestamp
 	isInternal?: boolean;     // Solo para comerciales
+	systemData?: {
+		action?: string;
+		fromUserId?: string;
+		toUserId?: string;
+		reason?: string;
+	};
 	attachment?: {
 		url: string;
 		fileName: string;

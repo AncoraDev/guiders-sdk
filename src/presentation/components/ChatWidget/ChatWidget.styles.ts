@@ -768,15 +768,16 @@ export function getChatStyles(position: ResolvedPosition): string {
             }
         }
 
-        /* Quick Actions */
+        /* Quick Actions — sit above the floating composer (~72px + 12px inset) */
         .guiders-quick-actions {
             display: flex;
             flex-direction: column;
-            padding: 12px 16px;
+            padding: 8px 16px 12px;
             margin: 0;
             background: transparent;
             position: sticky;
-            bottom: 0;
+            bottom: 84px;
+            z-index: 1;
             transition: opacity var(--gds-duration-slow, 200ms) ease, transform var(--gds-duration-slow, 200ms) ease;
         }
 
@@ -784,11 +785,15 @@ export function getChatStyles(position: ResolvedPosition): string {
             padding: 12px 16px;
             background: var(--gds-color-bg-elevated);
             border-radius: 12px;
-            margin-bottom: 12px;
+            margin: 0;
             color: var(--gds-color-text);
             font-size: 14px;
             line-height: 1.5;
             text-align: center;
+        }
+
+        .guiders-quick-actions:has(.guiders-quick-actions-buttons) .guiders-quick-actions-welcome {
+            margin-bottom: 12px;
         }
 
         .guiders-quick-actions-buttons {
@@ -850,7 +855,8 @@ export function getChatStyles(position: ResolvedPosition): string {
         @media (max-width: 768px) {
             .guiders-quick-actions {
                 margin: 0;
-                padding: 8px 12px;
+                padding: 8px 12px 10px;
+                bottom: 76px;
             }
 
             .guiders-quick-actions-buttons {

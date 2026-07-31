@@ -267,7 +267,9 @@ export function ChatWidget({ options }: ChatWidgetProps) {
                     : (
                         <>
                             <ChatMessages />
-                            {quickActionsConfig.enabled && quickActionsConfig.buttons.length > 0 && (
+                            {quickActionsConfig.enabled &&
+                                (!!quickActionsConfig.welcomeMessage ||
+                                    quickActionsConfig.buttons.length > 0) && (
                                 <QuickActions config={quickActionsConfig} />
                             )}
                             <ChatInput />

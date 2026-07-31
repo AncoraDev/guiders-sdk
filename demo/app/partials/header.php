@@ -44,7 +44,7 @@
       },
       commercialAvailability: {
         enabled: true,          // Disponibilidad real según comerciales Conectados en Console
-        hideWhenUnavailable: false, // Mantener chat visible; copy "Soporte conectado / no disponible"
+        hideWhenUnavailable: false, // Mantener chat visible; el estado se muestra en la cabecera
         showBadge: true,        // Badge con nº de comerciales online
         debug: true
       },
@@ -87,38 +87,13 @@
         // - Heartbeat automático cada 30s para mantener estado online
         // - Detección automática: 5 min → away, 15 min → offline
       },
-      // 🆕 Quick Actions - Botones de acción rápida en el chat
+      // Welcome message only (sin botones de acción rápida)
       quickActions: {
         enabled: true,
         welcomeMessage: '¡Hola! 👋 ¿En qué puedo ayudarte hoy?',
         showOnFirstOpen: true,
         showOnChatStart: true,
-        buttons: [
-          {
-            id: 'greet',
-            label: 'Saludar',
-            emoji: '👋',
-            action: { type: 'send_message', payload: '¡Hola! Me gustaría obtener más información.' }
-          },
-          {
-            id: 'pricing',
-            label: 'Ver precios',
-            emoji: '💰',
-            action: { type: 'send_message', payload: '¿Cuáles son sus planes y precios?' }
-          },
-          {
-            id: 'agent',
-            label: 'Hablar con persona',
-            emoji: '👤',
-            action: { type: 'request_agent' }
-          },
-          {
-            id: 'help',
-            label: 'Centro de ayuda',
-            emoji: '📚',
-            action: { type: 'open_url', payload: 'https://help.guiders.app' }
-          }
-        ]
+        buttons: []
       }
     };
 

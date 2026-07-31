@@ -43,6 +43,13 @@ export interface Message {
 }
 
 // Tipos específicos para el sistema de mensajes con scroll infinito
+export interface MessageSystemData {
+	action?: string;
+	fromUserId?: string;
+	toUserId?: string;
+	reason?: string;
+}
+
 export interface MessageV2 {
 	id: string;
 	chatId: string;
@@ -53,6 +60,8 @@ export interface MessageV2 {
 	isFirstResponse: boolean;
 	createdAt: string;
 	updatedAt: string;
+	/** Metadatos de mensajes SYSTEM (assigned / transferred / …). */
+	systemData?: MessageSystemData;
 	// Campos de IA (opcionales, presentes cuando el mensaje es de IA)
 	isAI?: boolean;
 	aiMetadata?: {

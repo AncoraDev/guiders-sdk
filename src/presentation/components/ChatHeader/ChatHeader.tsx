@@ -21,7 +21,10 @@ interface ChatHeaderProps {
 }
 
 const NO_AGENTS_SUBTITLE =
-    'No hay agentes disponibles ahora mismo. Puedes enviarnos un mensaje y avisamos al equipo de soporte.';
+    'No hay personas disponibles ahora mismo pero si envías un mensaje avisaremos al equipo de soporte.';
+
+const AGENTS_AVAILABLE_SUBTITLE =
+    'Nuestro equipo de soporte está disponible para cualquier consulta';
 
 // ---------------------------------------------------------------------------
 // ChatHeader
@@ -39,7 +42,7 @@ export function ChatHeader({ options }: ChatHeaderProps) {
     const assignedPresence = assignedPresenceStatusSignal.value;
     const supportOnline = presenceStatusSignal.value !== 'offline';
     const showBackBtn = chatSelectorEnabledSignal.value || !!(options.chatSelector?.enabled);
-    const title = options.title ?? 'Chat';
+    const title = options.title ?? 'Atención al usuario';
 
     const showHumanAvatar =
         hasCommercial &&
@@ -126,9 +129,11 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                             </div>
                             <div class="chat-header-title-container">
                                 <span class="chat-header-title">{title}</span>
-                                {showNoAgentsMessage && (
+                                {(showNoAgentsMessage || supportOnline) && (
                                     <span class="chat-header-subtitle" role="status">
-                                        {NO_AGENTS_SUBTITLE}
+                                        {showNoAgentsMessage
+                                            ? NO_AGENTS_SUBTITLE
+                                            : AGENTS_AVAILABLE_SUBTITLE}
                                     </span>
                                 )}
                             </div>

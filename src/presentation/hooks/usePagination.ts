@@ -55,6 +55,7 @@ function toMessageParams(raw: MessageV2): ChatMessageParams {
                 : new Date(data.timestamp).getTime()
             : undefined,
         senderId: data.senderId,
+        systemData: data.systemData,
         isAI: data.isAI,
         aiMetadata: data.aiMetadata,
     };

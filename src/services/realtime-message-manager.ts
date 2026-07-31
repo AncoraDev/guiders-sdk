@@ -363,18 +363,23 @@ export class RealtimeMessageManager {
 		}
 
 		try {
-			// El mensaje es de otro participante (comercial, bot, IA, etc.)
-			const sender = 'other';
+			const typeLower = (message.type || '').toLowerCase();
+			const isSystem =
+				typeLower === 'system' ||
+				message.senderType === 'SYSTEM' ||
+				!!message.systemData?.action;
 
-			// 🤖 Detectar si es mensaje de IA
-			const isAI = this.isAIMessage(message);
+			// 🤖 Detectar si es mensaje de IA (no aplica a system)
+			const isAI = !isSystem && this.isAIMessage(message);
+			const sender = isSystem ? 'system' : 'other';
 
 			// Renderizar usando la API de ChatUI
 			this.chatUI.renderChatMessage({
 				text: message.content,
-				sender: sender,
+				sender,
 				timestamp: new Date(message.sentAt).getTime(),
 				senderId: message.senderId,
+				systemData: message.systemData,
 				// 🤖 Información de IA
 				isAI: isAI,
 				aiMetadata: message.aiMetadata

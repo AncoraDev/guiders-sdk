@@ -81,9 +81,26 @@ function resolveFromParticipants(
     };
 }
 
-function applyResolved(support: PresenceUiStatus, assigned: PresenceUiStatus | null): void {
-    applySupportPresence(support);
+/**
+ * Aplica soporte (tenant/chat) + presencia del asignado.
+ *
+ * Importante: la resolución por participantes del chat NO debe marcar
+ * soporte como offline. En el mapa de presencia del chat solo está el
+ * comercial asignado; otros del tenant (p.ej. Rufino) no aparecen ahí.
+ * El offline de equipo solo llega vía TENANT_AVAILABILITY_ID.
+ */
+function applyResolved(
+    support: PresenceUiStatus,
+    assigned: PresenceUiStatus | null,
+    options?: { fromTenantAvailability?: boolean },
+): void {
     assignedPresenceStatusSignal.value = assigned;
+
+    if (support === 'offline' && !options?.fromTenantAvailability) {
+        return;
+    }
+
+    applySupportPresence(support);
 }
 
 export function usePresence(): void {
@@ -134,7 +151,9 @@ export function usePresence(): void {
                 if (event.userId === TENANT_AVAILABILITY_ID) {
                     if (event.status === 'offline') {
                         debugLog('[usePresence] Tenant availability → offline');
-                        applyResolved('offline', getAssignedId() ? 'offline' : null);
+                        applyResolved('offline', getAssignedId() ? 'offline' : null, {
+                            fromTenantAvailability: true,
+                        });
                     } else {
                         debugLog('[usePresence] Tenant availability → online');
                         applySupportPresence(toUiStatus(event.status));
@@ -148,6 +167,7 @@ export function usePresence(): void {
                 if (event.status === 'offline') {
                     debugLog('[usePresence] Commercial offline — revalidando');
                     if (assignedId && event.userId === assignedId) {
+                        // Solo el asignado: no tocar soporte tenant (puede haber otros online)
                         assignedPresenceStatusSignal.value = 'offline';
                     }
                     refreshFromRest();

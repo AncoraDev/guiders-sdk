@@ -77,7 +77,7 @@ export interface ChatUIOptions {
 	textColor?: string;
 	/** Ancho máximo de los mensajes */
 	maxWidthMessage?: string;
-	/** Título mostrado en el header del chat cuando no hay comercial asignado (default: "Chat"). Patch #9. */
+	/** Título mostrado en el header del chat cuando no hay comercial asignado (default: "Atención al usuario"). Patch #9. */
 	title?: string;
 	/** Configuración de posicionamiento del chat widget */
 	position?: ChatPositionConfig;
@@ -115,6 +115,13 @@ export interface ChatMessageParams {
 	timestamp?: number;
 	/** ID del remitente del mensaje */
 	senderId?: string;
+	/** Metadatos SYSTEM (p. ej. transferred) */
+	systemData?: {
+		action?: string;
+		fromUserId?: string;
+		toUserId?: string;
+		reason?: string;
+	};
 	// 🤖 Campos para mensajes de IA
 	/** Indica si el mensaje fue generado por IA */
 	isAI?: boolean;

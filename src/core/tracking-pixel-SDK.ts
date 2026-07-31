@@ -2110,30 +2110,23 @@ export class TrackingPixelSDK {
 
 		// Register callback for availability changes
 		// hideWhenUnavailable (default true): oculta el widget si no hay soporte.
-		// Demo usa hideWhenUnavailable:false y muestra copy "Soporte conectado".
+		// El estado se comunica en la cabecera del chat (no con mensajes de sistema).
 		const hideWhenUnavailable =
 			this.commercialAvailabilityConfig?.hideWhenUnavailable !== false;
-		let lastSupportAvailable: boolean | null = null;
 
 		this.commercialAvailabilityService.onAvailabilityChanged((available, count) => {
 			debugLog(`📡 [CommercialAvailability] Estado cambió: ${available} (${count} online)`);
 
 			// Sincronizar presencia in-chat (header / banner) con disponibilidad tenant
 			const presenceSvc = this.presenceManager?.getService();
+			// Limpiar avisos de disponibilidad del hilo (evitan confusión con la cabecera)
+			chat.clearAvailabilitySystemMessages();
 			if (available && count >= 1) {
 				presenceSvc?.applyCommercialStatus?.('online');
 				chat.showToggleButton();
 				if (this.commercialAvailabilityConfig?.showBadge) {
 					chat.updateUnreadCount(count);
 				}
-				if (lastSupportAvailable !== true) {
-					chat.addSystemMessage(
-						count === 1
-							? 'Soporte conectado — hay una persona disponible'
-							: `Soporte conectado — ${count} personas disponibles`
-					);
-				}
-				lastSupportAvailable = true;
 			} else {
 				presenceSvc?.applyCommercialStatus?.('offline');
 				chat.hideUnreadBadge();
@@ -2147,16 +2140,9 @@ export class TrackingPixelSDK {
 					chat.hideToggleButton();
 				} else {
 					chat.showToggleButton();
-					if (lastSupportAvailable !== false) {
-						chat.addSystemMessage(
-							'Soporte no disponible en este momento'
-						);
-					}
 				}
-				lastSupportAvailable = false;
 			}
 		});
-
 		// Start: REST initial check + WebSocket subscription
 		this.commercialAvailabilityService.start().then(() => {
 			debugLog('📡 [CommercialAvailability] Servicio iniciado (REST + WS)');

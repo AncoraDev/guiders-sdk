@@ -460,6 +460,18 @@ export class ChatUIBridge {
     }
 
     /**
+     * Quita del hilo los mensajes de sistema de disponibilidad de soporte
+     * (cabecera ya comunica ese estado; no deben quedar en el historial).
+     */
+    clearAvailabilitySystemMessages(): void {
+        const availabilityRe =
+            /^(Soporte conectado —|Soporte no disponible|No hay personas disponibles ahora mismo)/;
+        messagesSignal.value = messagesSignal.value.filter(
+            (m) => !(m.sender === 'system' && availabilityRe.test(m.text ?? ''))
+        );
+    }
+
+    /**
      * Adds the GDPR consent message as a system message if not already present.
      * MessageBubble renders all messages with sender === 'consent' inline (Patch #10).
      * Patch #16: Sender union now includes 'consent', no double-cast required.

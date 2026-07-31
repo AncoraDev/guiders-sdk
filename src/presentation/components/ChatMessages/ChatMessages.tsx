@@ -52,6 +52,23 @@ function resolveGroupKey(msg: ChatMessageParams): string {
     return `human:${msg.senderId ?? msg.sender}`;
 }
 
+function isTransferMessage(msg: ChatMessageParams): boolean {
+    if (msg.sender !== 'system') return false;
+    if (msg.systemData?.action === 'transferred') return true;
+    return /^transferido de /i.test((msg.text ?? '').trim());
+}
+
+function formatTransferTime(timestamp?: number): string | undefined {
+    if (timestamp == null) return undefined;
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return undefined;
+    return date.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    });
+}
+
 /**
  * Interleaves DateSeparator elements between messages whose dates differ.
  * Also computes isLastInGroup for Express-style gap spacing.
@@ -66,6 +83,26 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
             const label = msg.text.replace('[handoff]', '').trim();
             nodes.push(
                 <DateSeparator key={messageKey(msg, idx)} type="handoff" label={label} />
+            );
+            return;
+        }
+
+        // Transferencia: mismo patrón visual que Console (pill + líneas)
+        if (isTransferMessage(msg)) {
+            const key = getDateKey(msg.timestamp);
+            if (key !== lastDateKey) {
+                nodes.push(
+                    <DateSeparator key={`sep-${key}`} date={getDate(msg.timestamp)} />
+                );
+                lastDateKey = key;
+            }
+            nodes.push(
+                <DateSeparator
+                    key={messageKey(msg, idx)}
+                    type="transfer"
+                    label={msg.text}
+                    timeLabel={formatTransferTime(msg.timestamp)}
+                />
             );
             return;
         }

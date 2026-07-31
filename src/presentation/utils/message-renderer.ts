@@ -9,6 +9,12 @@ export interface MessageRenderData {
     sender: Sender;
     timestamp?: number | string;
     senderId?: string;
+    systemData?: {
+        action?: string;
+        fromUserId?: string;
+        toUserId?: string;
+        reason?: string;
+    };
     // 🤖 Campos para mensajes de IA
     isAI?: boolean;
     aiMetadata?: AIMetadata;
@@ -172,6 +178,7 @@ export class MessageRenderer {
             sender: this.determineSender(message),
             timestamp: message.createdAt,
             senderId: message.senderId,
+            systemData: message.systemData,
             // Campos de IA
             isAI: isAIMessage,
             aiMetadata: message.aiMetadata ? {
@@ -233,11 +240,12 @@ export class MessageRenderer {
         } catch (error) {
         }
 
-        // Determinar por tipo si está disponible
-        if (message.type === 'user') {
+        // Determinar por tipo si está disponible (backend usa SYSTEM en mayúsculas)
+        const typeLower = (message.type || '').toLowerCase();
+        if (typeLower === 'user') {
             return 'user';
         }
-        if (message.type === 'system') {
+        if (typeLower === 'system' || message.systemData?.action) {
             return 'system';
         }
 

@@ -84,7 +84,10 @@ export function QuickActions({ config }: QuickActionsProps) {
         }
     }, [isHumanAssigned]);
 
-    if (hidden || !config.enabled || config.buttons.length === 0) return null;
+    if (hidden || !config.enabled) return null;
+
+    const hasButtons = config.buttons.length > 0;
+    if (!config.welcomeMessage && !hasButtons) return null;
 
     // Hide quick actions (welcome message + buttons) when there are already real
     // messages in the conversation. System and consent messages don't count.
@@ -94,9 +97,10 @@ export function QuickActions({ config }: QuickActionsProps) {
     if (hasRealMessages) return null;
 
     // AC 7: show persistent human CTA when AI is active, not yet clicked,
-    // and no explicit request_agent button already exists in the config list
+    // and no explicit request_agent button already exists in the config list.
+    // Only when there are configured quick-action buttons.
     const hasRequestAgentButton = config.buttons.some(b => b.action.type === 'request_agent');
-    const showHumanCTA = !isHumanAssigned && !humanCtaHidden && !hasRequestAgentButton;
+    const showHumanCTA = hasButtons && !isHumanAssigned && !humanCtaHidden && !hasRequestAgentButton;
 
     const handleClick = (button: QuickActionButton) => {
         // Track first, before hiding
@@ -144,34 +148,36 @@ export function QuickActions({ config }: QuickActionsProps) {
             {config.welcomeMessage && (
                 <p class="guiders-quick-actions-welcome">{config.welcomeMessage}</p>
             )}
-            <div class="guiders-quick-actions-buttons">
-                {/* AC 7: Persistent human CTA — always first */}
-                {showHumanCTA && (
-                    <button
-                        class="guiders-quick-action-btn guiders-quick-action-btn--human-cta"
-                        type="button"
-                        style={{
-                            opacity: humanCtaFading ? 0 : 1,
-                            transition: 'opacity 150ms ease',
-                            outline: '1px solid var(--gds-color-author-ai)',
-                        }}
-                        onClick={handleHumanCtaClick}
-                    >
-                        🙋 Hablar con persona
-                    </button>
-                )}
-                {config.buttons.map((button) => (
-                    <button
-                        key={button.id}
-                        class={`guiders-quick-action-btn${button.action.type === 'request_agent' ? ' guiders-quick-action-btn--agent' : ''}`}
-                        type="button"
-                        onClick={() => handleClick(button)}
-                    >
-                        {button.emoji && <span>{button.emoji} </span>}
-                        {button.label}
-                    </button>
-                ))}
-            </div>
+            {hasButtons && (
+                <div class="guiders-quick-actions-buttons">
+                    {/* AC 7: Persistent human CTA — always first */}
+                    {showHumanCTA && (
+                        <button
+                            class="guiders-quick-action-btn guiders-quick-action-btn--human-cta"
+                            type="button"
+                            style={{
+                                opacity: humanCtaFading ? 0 : 1,
+                                transition: 'opacity 150ms ease',
+                                outline: '1px solid var(--gds-color-author-ai)',
+                            }}
+                            onClick={handleHumanCtaClick}
+                        >
+                            🙋 Hablar con persona
+                        </button>
+                    )}
+                    {config.buttons.map((button) => (
+                        <button
+                            key={button.id}
+                            class={`guiders-quick-action-btn${button.action.type === 'request_agent' ? ' guiders-quick-action-btn--agent' : ''}`}
+                            type="button"
+                            onClick={() => handleClick(button)}
+                        >
+                            {button.emoji && <span>{button.emoji} </span>}
+                            {button.label}
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
