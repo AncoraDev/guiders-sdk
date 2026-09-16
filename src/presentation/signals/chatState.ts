@@ -69,6 +69,13 @@ export const isLoadingInitialMessagesSignal = signal<boolean>(false);
 export const presenceStatusSignal = signal<PresenceUiStatus>('offline');
 
 /**
+ * @writer bridge — número de comerciales online a nivel tenant
+ * (`POST /v2/commercials/availability` + WS). 0 si no hay datos o nadie
+ * conectado. El header de equipo lo usa para el stack y el subtítulo.
+ */
+export const onlineCommercialCountSignal = signal<number>(0);
+
+/**
  * @writer hooks — presencia del comercial asignado (null si no hay asignado).
  * El header muestra avatar humano solo si esto no es offline.
  */

@@ -7,10 +7,12 @@ import {
     isShowingChatListSignal,
     assignedPresenceStatusSignal,
     presenceStatusSignal,
+    visitorIdSignal,
 } from '../../signals/chatState';
 import { toggleClickedSignal, toggleChatOpenSignal } from '../../signals/toggleState';
-import { generateInitials } from '../../utils/chat-utils';
+import { generateInitials, getVisitorTestHint } from '../../utils/chat-utils';
 import { CommercialAvatar } from './CommercialAvatar';
+import { TeamOnlineHeader } from './TeamOnlineHeader';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -21,10 +23,7 @@ interface ChatHeaderProps {
 }
 
 const NO_AGENTS_SUBTITLE =
-    'No hay personas disponibles ahora mismo pero si envías un mensaje avisaremos al equipo de soporte.';
-
-const AGENTS_AVAILABLE_SUBTITLE =
-    'Nuestro equipo de soporte está disponible para cualquier consulta';
+    'No hay nadie ahora. Si escribes, avisamos al equipo.';
 
 // ---------------------------------------------------------------------------
 // ChatHeader
@@ -32,8 +31,9 @@ const AGENTS_AVAILABLE_SUBTITLE =
 
 /**
  * Header del chat:
- * - Avatar del comercial solo si el asignado está online/away/busy.
- * - Sin agentes online → icono estándar + aviso en subtítulo.
+ * - Comercial asignado online → foto + nombre.
+ * - Equipo online sin asignar → stack genérico + "Equipo conectado".
+ * - Nadie online → icono de burbuja + aviso.
  */
 export function ChatHeader({ options }: ChatHeaderProps) {
     const hasCommercial = hasAssignedCommercialSignal.value;
@@ -43,6 +43,7 @@ export function ChatHeader({ options }: ChatHeaderProps) {
     const supportOnline = presenceStatusSignal.value !== 'offline';
     const showBackBtn = chatSelectorEnabledSignal.value || !!(options.chatSelector?.enabled);
     const title = options.title ?? 'Atención al usuario';
+    const visitorHint = getVisitorTestHint(visitorIdSignal.value);
 
     const showHumanAvatar =
         hasCommercial &&
@@ -50,6 +51,7 @@ export function ChatHeader({ options }: ChatHeaderProps) {
         assignedPresence != null &&
         assignedPresence !== 'offline';
 
+    const showTeamHeader = !showHumanAvatar && supportOnline;
     const showNoAgentsMessage = !showHumanAvatar && !supportOnline;
 
     const [displayState, setDisplayState] = useState<{
@@ -85,9 +87,11 @@ export function ChatHeader({ options }: ChatHeaderProps) {
             role="banner"
             aria-label={showHumanAvatar
                 ? `Chat con ${commercial?.name ?? 'Agente'}`
-                : showNoAgentsMessage
-                    ? 'Chat — sin agentes disponibles'
-                    : 'Chat'}
+                : showTeamHeader
+                    ? 'Chat — equipo conectado'
+                    : showNoAgentsMessage
+                        ? 'Chat — sin agentes disponibles'
+                        : 'Chat'}
         >
             {showBackBtn && (
                 <button
@@ -118,7 +122,9 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                             initials={generateInitials(humanCommercial.name)}
                         />
                     )
-                    : (
+                    : showTeamHeader
+                        ? <TeamOnlineHeader />
+                        : (
                         <div class="chat-header-identity">
                             <div class="chat-header-avatar-container">
                                 <div class="chat-header-avatar">
@@ -129,11 +135,9 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                             </div>
                             <div class="chat-header-title-container">
                                 <span class="chat-header-title">{title}</span>
-                                {(showNoAgentsMessage || supportOnline) && (
+                                {showNoAgentsMessage && (
                                     <span class="chat-header-subtitle" role="status">
-                                        {showNoAgentsMessage
-                                            ? NO_AGENTS_SUBTITLE
-                                            : AGENTS_AVAILABLE_SUBTITLE}
+                                        {NO_AGENTS_SUBTITLE}
                                     </span>
                                 )}
                             </div>
@@ -143,6 +147,14 @@ export function ChatHeader({ options }: ChatHeaderProps) {
             </div>
 
             <div class="chat-header-actions">
+                {visitorHint && (
+                    <span
+                        class="chat-header-visitor-hint"
+                        title={visitorIdSignal.value ?? undefined}
+                    >
+                        {visitorHint}
+                    </span>
+                )}
                 <button
                     class="chat-close-btn"
                     aria-label="Cerrar chat"

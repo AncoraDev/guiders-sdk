@@ -36,7 +36,7 @@ import {
     toggleChatOpenSignal,
     toggleResolvedPositionSignal,
 } from '../signals/toggleState';
-import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal } from '../signals/chatState';
+import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal, onlineCommercialCountSignal } from '../signals/chatState';
 import { mountChatWidget } from '../components/ChatWidget';
 import { mountConsentBanner } from '../components/ConsentBanner';
 import { ConsentBannerConfig } from '../types/consent-types';
@@ -909,6 +909,12 @@ export class ChatUIBridge {
     updateToggleState(isOpen: boolean): void { this.toggleBridge.updateToggleState(isOpen); }
     notifyChatOpenState(isOpen: boolean): void { this.toggleBridge.notifyChatOpenState(isOpen); }
     updateUnreadCount(count: number | null | undefined): void { this.toggleBridge.updateUnreadCount(count); }
+
+    /** Recuento de comerciales online (cabecera de equipo, no badge de no leídos). */
+    setOnlineCommercialCount(count: number): void {
+        const next = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+        onlineCommercialCountSignal.value = next;
+    }
     hideUnreadBadge(): void { this.toggleBridge.hideUnreadBadge(); }
     onToggle(callback: (visible: boolean) => void): void { this.toggleBridge.onToggle(callback); }
     connectUnreadService(visitorId: string, onMessageReceived?: (chatId: string) => void, autoOpenChatOnMessage?: boolean): void {

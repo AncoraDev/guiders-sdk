@@ -1551,23 +1551,16 @@ export class TrackingPixelSDK {
 			// Fallback para navegadores antiguos
 		}
 
-		// Verificar si esta carga es un refresh rápido (dentro del período de gracia)
+		// El flag de refresh ya no omite endSession: un cierre real debe
+		// marcar al visitante offline. Un reload re-identifica y vuelve a online.
+		sessionStorage.removeItem('guiders_is_refresh');
 		const lastUnloadTime = sessionStorage.getItem('guiders_last_unload_time');
 		if (lastUnloadTime) {
 			const timeSinceUnload = Date.now() - parseInt(lastUnloadTime, 10);
 			if (timeSinceUnload < REFRESH_GRACE_PERIOD_MS || isPageRefresh) {
 				debugLog(`[TrackingPixelSDK] 🔄 Refresh rápido detectado (${timeSinceUnload}ms, isReload=${isPageRefresh}) - reanudando sesión`);
-				// Marcar como refresh para que el próximo endSession lo sepa
-				sessionStorage.setItem('guiders_is_refresh', 'true');
-			} else {
-				sessionStorage.removeItem('guiders_is_refresh');
 			}
-			// Limpiar timestamp de unload
 			sessionStorage.removeItem('guiders_last_unload_time');
-		} else if (isPageRefresh) {
-			// Es un refresh pero no tenemos timestamp (primera vez o sesión expirada)
-			debugLog(`[TrackingPixelSDK] 🔄 Página cargada como refresh - configurando flag`);
-			sessionStorage.setItem('guiders_is_refresh', 'true');
 		}
 
 		const endSessionOnce = (reason: string) => {
@@ -1579,6 +1572,9 @@ export class TrackingPixelSDK {
 				sessionStorage.setItem('guiders_last_unload_time', Date.now().toString());
 
 				debugLog(`[TrackingPixelSDK] 🚪 Finalizando sesión por: ${reason}`);
+				// Cerrar el socket ya: si no, el servidor espera el ping timeout
+				// y el visitante sigue en "En la web" durante decenas de segundos.
+				this.wsService.disconnect();
 
 				// 1. Flush eventos pendientes si los hay
 				if (this.eventQueue.length > 0) {
@@ -1634,16 +1630,52 @@ export class TrackingPixelSDK {
 		});
 
 		// Evento secundario: pagehide - más confiable que beforeunload en móviles
-		window.addEventListener('pagehide', () => {
-			debugLog('[TrackingPixelSDK] 🚪 pagehide detectado');
+		window.addEventListener('pagehide', (event: PageTransitionEvent) => {
+			debugLog('[TrackingPixelSDK] 🚪 pagehide detectado', { persisted: event.persisted });
 
 			// Tracking V2: Backup en pagehide (para móviles)
 			if (this.trackingV2Enabled && this.eventQueueManager) {
 				this.eventQueueManager.saveToStorage();
 			}
 
+			// bfcache / restore: la pestaña sigue viva, no marcar offline.
+			if (event.persisted) {
+				debugLog('[TrackingPixelSDK] 📦 pagehide persistido (bfcache) - se mantiene la sesión');
+				return;
+			}
+
 			endSessionOnce('window_close');
 		});
+
+		window.addEventListener('pageshow', (event: PageTransitionEvent) => {
+			if (!event.persisted) return;
+			debugLog('[TrackingPixelSDK] 📦 pageshow persistido - reanudando sesión');
+			sessionEndCalled = false;
+			this.resumeAfterBfCache();
+		});
+	}
+
+	/**
+	 * Vuelve de bfcache: la sesión no se cerró; hay que reabrir el WS.
+	 * Si el sessionId se perdió, se re-identifica.
+	 */
+	private resumeAfterBfCache(): void {
+		let sessionId: string | null = null;
+		try {
+			sessionId = sessionStorage.getItem('guiders_backend_session_id');
+		} catch {
+			sessionId = null;
+		}
+
+		if (!sessionId) {
+			this.identifyExecuted = false;
+			void this.executeIdentify();
+			return;
+		}
+
+		if (this.chatUI && !this.wsService.isConnected()) {
+			this.initializeWebSocketConnection(this.chatUI);
+		}
 	}
 
 	private configureTypingIndicators(chat: ChatUI): void {
@@ -2122,12 +2154,14 @@ export class TrackingPixelSDK {
 			chat.clearAvailabilitySystemMessages();
 			if (available && count >= 1) {
 				presenceSvc?.applyCommercialStatus?.('online');
+				chat.setOnlineCommercialCount?.(count);
 				chat.showToggleButton();
 				if (this.commercialAvailabilityConfig?.showBadge) {
 					chat.updateUnreadCount(count);
 				}
 			} else {
 				presenceSvc?.applyCommercialStatus?.('offline');
+				chat.setOnlineCommercialCount?.(0);
 				chat.hideUnreadBadge();
 				if (hideWhenUnavailable) {
 					debugLog(

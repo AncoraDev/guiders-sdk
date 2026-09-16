@@ -222,15 +222,6 @@ export class VisitorsV2Service {
       return false;
     }
 
-    // Verificar si es un refresh rápido - NO enviar endSession si es así
-    const isRefresh = sessionStorage.getItem('guiders_is_refresh') === 'true';
-    if (isRefresh && options.useBeacon) {
-      debugLog('[VisitorsV2Service] 🔄 Refresh detectado - manteniendo sesión activa');
-      // NO limpiar sessionStorage para que la nueva página pueda reanudar
-      sessionStorage.removeItem('guiders_is_refresh');
-      return true; // Simular éxito sin enviar beacon
-    }
-
     const url = `${this.getBaseUrl()}/session/end`;
     const payload = {
       sessionId,

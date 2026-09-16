@@ -5,7 +5,7 @@
  * - 0 agentes online → presence offline → icono estándar + aviso en header.
  * - 2+ comerciales inactivos → igual (offline).
  * - 1 activo aunque NO sea el asignado → soporte online,
- *   pero header con icono estándar (no avatar del asignado offline).
+ *   header de equipo (stack genérico, no avatar del asignado offline).
  * - Asignado online → avatar del comercial + indicador de presencia.
  */
 

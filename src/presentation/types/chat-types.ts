@@ -77,7 +77,7 @@ export interface ChatUIOptions {
 	textColor?: string;
 	/** Ancho máximo de los mensajes */
 	maxWidthMessage?: string;
-	/** Título mostrado en el header del chat cuando no hay comercial asignado (default: "Atención al usuario"). Patch #9. */
+	/** Título cuando no hay comerciales online (default: "Atención al usuario"). Con equipo online el header usa "Equipo conectado". */
 	title?: string;
 	/** Configuración de posicionamiento del chat widget */
 	position?: ChatPositionConfig;

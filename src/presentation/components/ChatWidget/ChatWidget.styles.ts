@@ -225,6 +225,46 @@ export function getChatStyles(position: ResolvedPosition): string {
             color: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 90%, transparent);
         }
 
+        .chat-header-avatar-stack {
+            display: flex;
+            align-items: center;
+            width: auto;
+            min-width: 46px;
+            height: 32px;
+        }
+
+        .chat-header-avatar-stack .guiders-presence {
+            right: 0;
+            bottom: 0;
+        }
+
+        .chat-header-avatar--stack {
+            width: 28px;
+            height: 28px;
+            margin-left: -10px;
+            border: 2px solid var(--gds-color-header-bg, #111827);
+            background: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 14%, transparent);
+        }
+
+        .chat-header-avatar--stack:first-child {
+            margin-left: 0;
+        }
+
+        .chat-header-avatar--stack-1 {
+            background: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 22%, transparent);
+            z-index: 1;
+        }
+
+        .chat-header-avatar--stack-2 {
+            background: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 30%, transparent);
+            z-index: 2;
+        }
+
+        .chat-header-avatar--stack svg {
+            width: 14px;
+            height: 14px;
+        }
+
         .avatar-status-dot {
             position: absolute;
             bottom: 0;
@@ -283,6 +323,18 @@ export function getChatStyles(position: ResolvedPosition): string {
             display: flex;
             align-items: center;
             flex-shrink: 0;
+            gap: 4px;
+        }
+
+        .chat-header-visitor-hint {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            user-select: all;
+            cursor: text;
+            color: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 38%, transparent);
         }
 
         .chat-close-btn {
