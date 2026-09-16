@@ -1472,8 +1472,7 @@ export class TrackingPixelSDK {
 					debugLog('[TrackingPixelSDK] ♻️ Chat abierto reutilizado:', openChat.id, openChat.status);
 				} else if (hasExistingChats && result.chats) {
 					localStorage.setItem('guiders_recent_chats', JSON.stringify(result.chats.chats));
-					ChatSessionStore.getInstance().setCurrent(result.chats.chats![0].id);
-					debugLog('[TrackingPixelSDK] ♻️ Chat reciente (cerrado) en store:', result.chats.chats![0].id);
+					debugLog('[TrackingPixelSDK] ♻️ Historial cerrado (no bloquea site-entry):', result.chats.chats![0].id);
 				} else {
 					debugLog('[TrackingPixelSDK] 💬 No hay chats previos, mostrando mensaje de bienvenida automáticamente');
 					if (this.chatUI && this.chatUI.checkAndAddInitialMessages) {
@@ -2662,13 +2661,8 @@ export class TrackingPixelSDK {
 		this.siteEntryPendingEnsured = true;
 
 		try {
-			const existingId =
-				this.chatUI?.getChatId?.() || ChatSessionStore.getInstance().getCurrent();
-			if (existingId) {
-				debugLog('[TrackingPixelSDK] ⏭️ PENDING omitido: ya hay chatId', existingId);
-				return;
-			}
-
+			// Un chatId cerrado en el store no cuenta: el visitante sigue
+			// pudiendo generar un PENDING de entrada (o verse en En la web).
 			debugLog('[TrackingPixelSDK] 🆕 createChatAuto (site-entry) → cola Pendientes');
 			const created = await ChatV2Service.getInstance().createChatAuto({
 				metadata: {

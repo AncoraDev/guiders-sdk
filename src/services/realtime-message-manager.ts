@@ -334,6 +334,14 @@ export class RealtimeMessageManager {
 			isInternal: message.isInternal
 		});
 
+		// Sin chat activo: adoptar el del mensaje. Ocurre cuando el comercial
+		// inicia la conversación (saludo proactivo) antes de que el visitante
+		// escriba: si lo ignoráramos, el saludo no llegaría en tiempo real.
+		if (!this.currentChatId && message.chatId) {
+			debugLog('💬 [RealtimeMessageManager] 📌 Adoptando chat del mensaje entrante:', message.chatId);
+			this.setCurrentChat(message.chatId);
+		}
+
 		// Verificar que el mensaje pertenece al chat actual
 		if (message.chatId !== this.currentChatId) {
 			debugLog('💬 [RealtimeMessageManager] ⚠️ Mensaje de otro chat, ignorando');
