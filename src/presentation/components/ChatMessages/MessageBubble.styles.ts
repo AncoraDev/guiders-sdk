@@ -56,10 +56,11 @@ export function wrapperStyle(isUser: boolean, isLastInGroup: boolean): CSS {
         display: 'flex',
         alignItems: 'flex-end',
         gap: '6px',
-        marginBottom: isLastInGroup ? '6px' : '2px',
+        marginBottom: isLastInGroup ? '12px' : '8px',
         flexDirection: isUser ? 'row-reverse' : 'row',
-        marginLeft: isUser ? '10%' : '0',
-        marginRight: isUser ? '0' : '10%',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
     };
 }
 
@@ -72,8 +73,9 @@ export function contentColumnStyle(isUser: boolean): CSS {
         display: 'flex',
         flexDirection: 'column',
         alignItems: isUser ? 'flex-end' : 'flex-start',
-        maxWidth: '100%',
-        minWidth: 0,
+        // Ancho del contenido, tope 75% del hilo (evita encoger la burbuja en flex).
+        width: 'max-content',
+        maxWidth: '75%',
     };
 }
 
@@ -116,7 +118,8 @@ export function messageStyle(type: AuthorType, isLastInGroup: boolean): CSS {
         padding: '7px 11px',
         borderRadius: 'var(--gds-radius-bubble, 14px)',
         display: 'inline-block',
-        maxWidth: '72%',
+        width: 'fit-content',
+        maxWidth: '100%',
         overflowWrap: 'break-word',
         position: 'relative',
         background: bubbleBg(type),
