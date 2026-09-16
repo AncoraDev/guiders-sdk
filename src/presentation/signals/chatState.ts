@@ -76,8 +76,8 @@ export const presenceStatusSignal = signal<PresenceUiStatus>('offline');
 export const onlineCommercialCountSignal = signal<number>(0);
 
 /**
- * @writer hooks — presencia del comercial asignado (null si no hay asignado).
- * El header muestra avatar humano solo si esto no es offline.
+ * @writer hooks|bridge — presencia del comercial asignado (null si no hay).
+ * El header muestra avatar si hay asignado y esto no es offline (null = aún no sabemos).
  */
 export const assignedPresenceStatusSignal = signal<PresenceUiStatus | null>(null);
 

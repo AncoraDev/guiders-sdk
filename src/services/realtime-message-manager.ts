@@ -518,7 +518,12 @@ export class RealtimeMessageManager {
 			commercial: event.commercial
 		});
 
-		// Verificar que el evento pertenece al chat actual
+		// Saludar puede asignar el PENDING de site-entry antes de que el
+		// visitante tenga currentChatId (o con otro id en store).
+		if (!this.currentChatId && event.chatId) {
+			this.setCurrentChat(event.chatId);
+		}
+
 		if (event.chatId !== this.currentChatId) {
 			console.log('💬 [RealtimeMessageManager] ⚠️ Evento de otro chat, ignorando');
 			return;
@@ -529,14 +534,15 @@ export class RealtimeMessageManager {
 			return;
 		}
 
-		// Si el evento incluye info del comercial, actualizar header directamente
-		if (event.commercial) {
-			console.log('💬 [RealtimeMessageManager] ✅ Llamando updateHeaderWithCommercial con:', event.commercial);
-			this.chatUI.updateHeaderWithCommercial(event.commercial, event.status);
-			console.log('💬 [RealtimeMessageManager] ✅ updateHeaderWithCommercial completado');
-		} else {
-			// Fallback: si no hay info del comercial, intentar refrescar del backend
-			console.log('💬 [RealtimeMessageManager] ⚠️ No hay info de comercial en evento, usando refreshChatDetailsForced');
+		const commercial = event.commercial ?? (event.commercialId
+			? { id: event.commercialId, name: 'Agente' }
+			: null);
+
+		if (commercial) {
+			this.chatUI.updateHeaderWithCommercial(commercial, event.status);
+		}
+
+		if (!event.commercial) {
 			setTimeout(async () => {
 				try {
 					await this.chatUI?.refreshChatDetailsForced();

@@ -212,4 +212,37 @@ export function usePresence(): void {
             }
         };
     });
+
+    // Tras Saludar aparece assignedCommercial: hay que reconsultar el mapa
+    // del chat; si no, assignedPresence se queda null y el header no cambia.
+    useSignalEffect(() => {
+        const assignedId =
+            chatDetailSignal.value?.assignedCommercial?.id ??
+            chatDetailSignal.value?.assignedCommercialId ??
+            null;
+        const service = presenceServiceSignal.value;
+        const chatId = chatIdSignal.value;
+        if (!assignedId || !service?.getChatPresence || !chatId) {
+            return;
+        }
+
+        service.getChatPresence(chatId).then((presence) => {
+            if (!presence) return;
+            const commercials = presence.participants?.filter(
+                (p) => p.userType === 'commercial'
+            ) ?? [];
+            if (commercials.length === 0) {
+                // El mapa aún no tiene al asignado; no tumbar el optimistic online.
+                if (assignedPresenceStatusSignal.peek() == null) {
+                    assignedPresenceStatusSignal.value = 'online';
+                }
+                return;
+            }
+            const resolved = resolveFromParticipants(commercials, assignedId);
+            debugLog('[usePresence] Presence after assigned change:', resolved);
+            applyResolved(resolved.support, resolved.assigned);
+        }).catch((err: unknown) => {
+            debugError('[usePresence] getChatPresence after assign failed:', err);
+        });
+    });
 }

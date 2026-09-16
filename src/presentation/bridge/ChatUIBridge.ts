@@ -36,7 +36,7 @@ import {
     toggleChatOpenSignal,
     toggleResolvedPositionSignal,
 } from '../signals/toggleState';
-import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal, onlineCommercialCountSignal } from '../signals/chatState';
+import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal, onlineCommercialCountSignal, assignedPresenceStatusSignal } from '../signals/chatState';
 import { mountChatWidget } from '../components/ChatWidget';
 import { mountConsentBanner } from '../components/ConsentBanner';
 import { ConsentBannerConfig } from '../types/consent-types';
@@ -641,25 +641,26 @@ export class ChatUIBridge {
      */
     updateHeaderWithCommercial(commercial: AssignedCommercialInfo, newStatus?: string): void {
         const current = chatDetailSignal.value;
+        const assigned = {
+            id: commercial.id,
+            name: commercial.name,
+            avatarUrl: commercial.avatarUrl,
+        };
         if (current) {
             chatDetailSignal.value = {
                 ...current,
-                assignedCommercial: {
-                    id: commercial.id,
-                    name: commercial.name,
-                    avatarUrl: commercial.avatarUrl,
-                },
+                assignedCommercialId: commercial.id,
+                assignedCommercial: assigned,
             };
         } else {
-            // No detail loaded yet — only the assignedCommercial is reliably known.
             chatDetailSignal.value = {
-                assignedCommercial: {
-                    id: commercial.id,
-                    name: commercial.name,
-                    avatarUrl: commercial.avatarUrl,
-                },
+                assignedCommercialId: commercial.id,
+                assignedCommercial: assigned,
             } as ChatV2;
         }
+
+        // Quien acaba de Saludar está actuando: no esperar presence:changed.
+        assignedPresenceStatusSignal.value = 'online';
 
         if (newStatus !== undefined) {
             lastKnownChatStatusSignal.value = newStatus as ChatStatus;
@@ -671,8 +672,10 @@ export class ChatUIBridge {
             chatDetailSignal.value = {
                 ...chatDetailSignal.value,
                 assignedCommercial: undefined,
+                assignedCommercialId: undefined,
             };
         }
+        assignedPresenceStatusSignal.value = null;
         lastKnownChatStatusSignal.value = null;
     }
 

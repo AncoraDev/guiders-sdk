@@ -45,10 +45,10 @@ export function ChatHeader({ options }: ChatHeaderProps) {
     const title = options.title ?? 'Atención al usuario';
     const visitorHint = getVisitorTestHint(visitorIdSignal.value);
 
+    // null = aún no llegó presencia: hay asignado, no es "equipo sin asignar".
     const showHumanAvatar =
         hasCommercial &&
         !!commercial &&
-        assignedPresence != null &&
         assignedPresence !== 'offline';
 
     const showTeamHeader = !showHumanAvatar && supportOnline;
