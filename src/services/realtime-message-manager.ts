@@ -375,6 +375,7 @@ export class RealtimeMessageManager {
 
 			// Renderizar usando la API de ChatUI
 			this.chatUI.renderChatMessage({
+				id: message.messageId,
 				text: message.content,
 				sender,
 				timestamp: new Date(message.sentAt).getTime(),

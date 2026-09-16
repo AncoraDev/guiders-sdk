@@ -12,6 +12,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { MessageBubble } from './MessageBubble';
 import { DateSeparator } from './DateSeparator';
 import { LoadingIndicator } from './LoadingIndicator';
+import { ContactRequestCard, isContactInteractiveMessage } from './ContactRequestCard';
 
 // ---------------------------------------------------------------------------
 // Date separator helpers
@@ -73,9 +74,23 @@ function formatTransferTime(timestamp?: number): string | undefined {
  * Interleaves DateSeparator elements between messages whose dates differ.
  * Also computes isLastInGroup for Express-style gap spacing.
  */
+function submittedRequestIds(messages: ChatMessageParams[]): Set<string> {
+    const ids = new Set<string>();
+    messages.forEach((msg) => {
+        if (msg.systemData?.action === 'contact_submission' && msg.systemData.requestId) {
+            ids.add(msg.systemData.requestId);
+        }
+        if (msg.systemData?.action === 'contact_request' && (msg.systemData.status === 'submitted' || msg.systemData.status === 'confirmed') && msg.systemData.requestId) {
+            ids.add(msg.systemData.requestId);
+        }
+    });
+    return ids;
+}
+
 function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[] {
     const nodes: VNode[] = [];
     let lastDateKey = '';
+    const submittedIds = submittedRequestIds(messages);
 
     messages.forEach((msg, idx) => {
         // Handoff system messages render as DateSeparator type='handoff', not a bubble
@@ -83,6 +98,25 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
             const label = msg.text.replace('[handoff]', '').trim();
             nodes.push(
                 <DateSeparator key={messageKey(msg, idx)} type="handoff" label={label} />
+            );
+            return;
+        }
+
+        if (isContactInteractiveMessage(msg)) {
+            const key = getDateKey(msg.timestamp);
+            if (key !== lastDateKey) {
+                nodes.push(
+                    <DateSeparator key={`sep-${key}`} date={getDate(msg.timestamp)} />
+                );
+                lastDateKey = key;
+            }
+            const requestId = msg.systemData?.requestId;
+            nodes.push(
+                <ContactRequestCard
+                    key={messageKey(msg, idx)}
+                    message={msg}
+                    alreadySubmitted={!!requestId && submittedIds.has(requestId)}
+                />
             );
             return;
         }

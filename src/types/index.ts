@@ -43,11 +43,22 @@ export interface Message {
 }
 
 // Tipos específicos para el sistema de mensajes con scroll infinito
+export interface ContactRequestPayload {
+	nombre?: string;
+	apellidos?: string;
+	email?: string;
+	telefono?: string;
+	poblacion?: string;
+}
+
 export interface MessageSystemData {
 	action?: string;
 	fromUserId?: string;
 	toUserId?: string;
 	reason?: string;
+	requestId?: string;
+	status?: 'pending' | 'submitted' | 'confirmed';
+	data?: ContactRequestPayload;
 }
 
 export interface MessageV2 {

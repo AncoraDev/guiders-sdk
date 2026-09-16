@@ -570,6 +570,35 @@ export class ChatV2Service {
 		return message;
 	}
 
+	async submitContactData(
+		chatId: string,
+		data: {
+			nombre: string;
+			email: string;
+			telefono: string;
+			apellidos?: string;
+			poblacion?: string;
+		},
+	): Promise<any> {
+		const endpoints = EndpointManager.getInstance();
+		const baseEndpoint = (localStorage.getItem('pixelEndpoint') || endpoints.getEndpoint());
+		const apiRoot = baseEndpoint.endsWith('/api') ? baseEndpoint : `${baseEndpoint}/api`;
+		const url = `${apiRoot}/v2/chats/${chatId}/contact-submit`;
+
+		const response = await this.fetchWithReauth(
+			url,
+			this.getFetchOptions('POST', JSON.stringify(data)),
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			debugError('[ChatV2Service] ❌ Error al enviar datos de contacto:', errorText);
+			throw new Error(`Error al enviar datos (${response.status})`);
+		}
+
+		return response.json();
+	}
+
 	/**
 	 * Método inteligente que decide si crear un chat nuevo con mensaje o enviar mensaje a chat existente
 	 * @param visitorId ID del visitante

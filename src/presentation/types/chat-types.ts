@@ -107,6 +107,7 @@ export interface ChatUIOptions {
  * Parámetros para renderizar un mensaje en el chat
  */
 export interface ChatMessageParams {
+	id?: string;
 	/** Texto del mensaje */
 	text: string;
 	/** Remitente del mensaje */
@@ -121,6 +122,15 @@ export interface ChatMessageParams {
 		fromUserId?: string;
 		toUserId?: string;
 		reason?: string;
+		requestId?: string;
+		status?: 'pending' | 'submitted' | 'confirmed';
+		data?: {
+			nombre?: string;
+			apellidos?: string;
+			email?: string;
+			telefono?: string;
+			poblacion?: string;
+		};
 	};
 	// 🤖 Campos para mensajes de IA
 	/** Indica si el mensaje fue generado por IA */

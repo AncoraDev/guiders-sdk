@@ -46,6 +46,7 @@ const MESSAGE_LIMIT = 20;
 function toMessageParams(raw: MessageV2): ChatMessageParams {
     const data = MessageRenderer.fromMessageV2(raw);
     return {
+        id: data.id || raw.id,
         text: data.content,
         // `data.sender` is already typed as `Sender` upstream — no cast needed.
         sender: data.sender,

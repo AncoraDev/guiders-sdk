@@ -14,6 +14,15 @@ export interface MessageRenderData {
         fromUserId?: string;
         toUserId?: string;
         reason?: string;
+        requestId?: string;
+        status?: 'pending' | 'submitted' | 'confirmed';
+        data?: {
+            nombre?: string;
+            apellidos?: string;
+            email?: string;
+            telefono?: string;
+            poblacion?: string;
+        };
     };
     // 🤖 Campos para mensajes de IA
     isAI?: boolean;
@@ -231,6 +240,11 @@ export class MessageRenderer {
             return 'ai';
         }
 
+        const typeLower = (message.type || '').toLowerCase();
+        if (typeLower === 'system' || typeLower === 'interactive' || message.systemData?.action) {
+            return 'system';
+        }
+
         // Lógica para mensajes de usuario
         try {
             const visitorId = localStorage.getItem('visitorId');
@@ -240,13 +254,8 @@ export class MessageRenderer {
         } catch (error) {
         }
 
-        // Determinar por tipo si está disponible (backend usa SYSTEM en mayúsculas)
-        const typeLower = (message.type || '').toLowerCase();
         if (typeLower === 'user') {
             return 'user';
-        }
-        if (typeLower === 'system' || message.systemData?.action) {
-            return 'system';
         }
 
         // Fallback: es un agente/asistente

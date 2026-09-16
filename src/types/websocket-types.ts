@@ -6,7 +6,7 @@
 /**
  * Tipos de mensajes soportados
  */
-export type MessageType = 'text' | 'image' | 'file' | 'system' | 'ai';
+export type MessageType = 'text' | 'image' | 'file' | 'system' | 'ai' | 'interactive';
 
 /**
  * Metadatos de mensajes generados por IA
@@ -51,6 +51,15 @@ export interface RealtimeMessage {
 		fromUserId?: string;
 		toUserId?: string;
 		reason?: string;
+		requestId?: string;
+		status?: 'pending' | 'submitted' | 'confirmed';
+		data?: {
+			nombre?: string;
+			apellidos?: string;
+			email?: string;
+			telefono?: string;
+			poblacion?: string;
+		};
 	};
 	attachment?: {
 		url: string;

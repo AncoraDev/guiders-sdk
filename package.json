@@ -18,6 +18,8 @@
     "test:report": "playwright show-report",
     "test:unit": "jest --config jest.config.ts",
     "build": "webpack --mode=production",
+    "demo": "php -S 127.0.0.1:8083 -t demo/app",
+    "watch": "webpack serve --mode=development",
     "start": "bash -c './wordpress-plugin/wp-docker.sh start & webpack serve --mode=development'",
     "release:wp": "bash wordpress-plugin/build-plugin.sh",
     "release:wp:skip": "bash wordpress-plugin/build-plugin.sh --skip-build",
