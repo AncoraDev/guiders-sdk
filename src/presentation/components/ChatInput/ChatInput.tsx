@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'preact/hooks';
 import { presenceServiceSignal } from '../../signals/presenceState';
 import {
     chatIdSignal,
+    chatDetailSignal,
     chatInputPlaceholderSignal,
     presenceStatusSignal,
 } from '../../signals/chatState';
@@ -90,7 +91,10 @@ export function ChatInput() {
 
     return (
         <>
-            <TypingIndicator authorType="human" />
+            <TypingIndicator
+                authorType="human"
+                authorName={chatDetailSignal.value?.assignedCommercial?.name}
+            />
             <div
                 class={`chat-input-container${hasContent ? ' chat-input-container--ready' : ''}`}
                 ref={composerRef}

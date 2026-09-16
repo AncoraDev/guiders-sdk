@@ -388,6 +388,7 @@ export class RealtimeMessageManager {
 				sender,
 				timestamp: new Date(message.sentAt).getTime(),
 				senderId: message.senderId,
+				senderName: message.senderName,
 				systemData: message.systemData,
 				// 🤖 Información de IA
 				isAI: isAI,

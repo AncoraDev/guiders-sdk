@@ -5,6 +5,7 @@ import {
     isLoadingInitialMessagesSignal,
     hasMoreMessagesSignal,
     isPaginatingSignal,
+    chatDetailSignal,
 } from '../../signals';
 import { ChatMessageParams } from '../../types/chat-types';
 import { useScrollToBottom } from '../../hooks';
@@ -157,8 +158,16 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
         const currentGroup = resolveGroupKey(msg);
         const nextGroup = next ? resolveGroupKey(next) : null;
         const isLastInGroup = currentGroup !== nextGroup || next == null;
+        const commercialName = chatDetailSignal.value?.assignedCommercial?.name;
+        const authorName = msg.senderName || commercialName;
         nodes.push(
-            <MessageBubble key={messageKey(msg, idx)} message={msg} isLastInGroup={isLastInGroup} />
+            <MessageBubble
+                key={messageKey(msg, idx)}
+                message={msg}
+                isLastInGroup={isLastInGroup}
+                authorName={authorName}
+                authorInitial={authorName?.[0]?.toUpperCase()}
+            />
         );
     });
 

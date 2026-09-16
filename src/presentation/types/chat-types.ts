@@ -116,6 +116,8 @@ export interface ChatMessageParams {
 	timestamp?: number;
 	/** ID del remitente del mensaje */
 	senderId?: string;
+	/** Nombre visible del comercial (si el backend lo envía) */
+	senderName?: string;
 	/** Metadatos SYSTEM (p. ej. transferred) */
 	systemData?: {
 		action?: string;
