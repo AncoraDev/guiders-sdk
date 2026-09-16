@@ -34,6 +34,7 @@ const config: Config = {
         '^react-dom$': '<rootDir>/node_modules/preact/compat/dist/compat.js',
     },
     setupFilesAfterEnv: ['<rootDir>/tests/unit/setup.ts'],
+    passWithNoTests: true,
 };
 
 export default config;

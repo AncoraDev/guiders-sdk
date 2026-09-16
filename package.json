@@ -16,7 +16,6 @@
     "test:debug": "playwright test --debug",
     "test:headed": "playwright test --headed",
     "test:report": "playwright show-report",
-    "test:visual:update": "playwright test visual-regression --update-snapshots",
     "test:unit": "jest --config jest.config.ts",
     "build": "webpack --mode=production",
     "start": "bash -c './wordpress-plugin/wp-docker.sh start & webpack serve --mode=development'",
