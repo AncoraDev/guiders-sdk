@@ -1753,10 +1753,10 @@ class GuidersAdmin {
      */
     public function quickActionsWelcomeMessageFieldCallback() {
         $settings = get_option('guiders_wp_plugin_settings', array());
-        $message = isset($settings['quick_actions_welcome_message']) ? $settings['quick_actions_welcome_message'] : '¡Hola! 👋 ¿En qué puedo ayudarte hoy?';
+        $message = isset($settings['quick_actions_welcome_message']) ? $settings['quick_actions_welcome_message'] : 'Te lee una persona, no un bot.';
 
         echo '<input type="text" id="quick_actions_welcome_message" name="guiders_wp_plugin_settings[quick_actions_welcome_message]" value="' . esc_attr($message) . '" class="regular-text" />';
-        echo '<p class="description">' . __('Mensaje que aparece encima de los botones de acción rápida.', 'guiders-wp-plugin') . '</p>';
+        echo '<p class="description">' . __('Texto del estado vacío del chat, bajo el título «Cuéntanos qué necesitas».', 'guiders-wp-plugin') . '</p>';
     }
 
     /**

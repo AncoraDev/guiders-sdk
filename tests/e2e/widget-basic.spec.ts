@@ -211,33 +211,30 @@ test.describe('Chat input and send button', () => {
 test.describe('Quick actions', () => {
     test.beforeEach(({ page }) => requireDemo());
 
-    test('quick actions container renders on first visit', async ({ page }) => {
-        // Clear all SDK storage so the widget boots with no chat history,
-        // which is the condition required for quick-actions to be shown.
+    test('empty state renders on first visit', async ({ page }) => {
+        // Clear all SDK storage so the widget boots with no chat history.
         await gotoDemoFresh(page);
         await openWidget(page);
 
-        await expect(shadow(page, '.guiders-quick-actions')).toBeVisible();
+        await expect(shadow(page, '.guiders-chat-empty')).toBeVisible();
     });
 
-    test('quick action buttons are rendered and clickable', async ({ page }) => {
+    test('quick action buttons stay hidden when demo has none configured', async ({ page }) => {
         await gotoDemoFresh(page);
         await openWidget(page);
 
-        const btns = shadow(page, '.guiders-quick-actions-buttons button');
-        await expect(btns.first()).toBeVisible();
-
-        // Click the first action — must not crash the widget.
-        await btns.first().click();
-        await page.waitForTimeout(300);
-        await expect(shadow(page, '.guiders-chat-widget-root')).toBeVisible();
+        await expect(shadow(page, '.guiders-quick-actions')).toHaveCount(0);
+        await expect(shadow(page, '.guiders-chat-empty')).toBeVisible();
     });
 
-    test('welcome message is shown above quick action buttons', async ({ page }) => {
+    test('empty state shows human-first welcome copy', async ({ page }) => {
         await gotoDemoFresh(page);
         await openWidget(page);
 
-        await expect(shadow(page, '.guiders-quick-actions-welcome')).toBeVisible();
+        const empty = shadow(page, '.guiders-chat-empty');
+        await expect(empty).toBeVisible();
+        await expect(empty).toContainText('Cuéntanos qué necesitas');
+        await expect(empty).toContainText('Te lee una persona, no un bot.');
     });
 });
 

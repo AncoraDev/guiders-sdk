@@ -90,7 +90,7 @@
       // Welcome message only (sin botones de acción rápida)
       quickActions: {
         enabled: true,
-        welcomeMessage: '¡Hola! 👋 ¿En qué puedo ayudarte hoy?',
+        welcomeMessage: 'Te lee una persona, no un bot.',
         showOnFirstOpen: true,
         showOnChatStart: true,
         buttons: []

@@ -17,6 +17,7 @@ import { ChatMessages } from '../ChatMessages';
 import { ChatInput } from '../ChatInput';
 import { OfflineBanner } from '../OfflineBanner';
 import { QuickActions } from '../QuickActions';
+import { DEFAULT_EMPTY_STATE_BODY } from '../ChatEmptyState';
 import { ChatListView } from '../ChatListView';
 import { ToggleButton } from '../ToggleButton';
 import { usePresence } from '../../hooks/usePresence';
@@ -40,7 +41,7 @@ interface ChatWidgetProps {
 function resolveQuickActionsConfig(options: ChatWidgetOptions): QuickActionsConfig {
     return {
         enabled: false,
-        welcomeMessage: '¡Hola! 👋 ¿En qué puedo ayudarte?',
+        welcomeMessage: DEFAULT_EMPTY_STATE_BODY,
         showOnFirstOpen: true,
         showOnChatStart: true,
         buttons: [],
@@ -266,10 +267,9 @@ export function ChatWidget({ options }: ChatWidgetProps) {
                     ? <ChatListView />
                     : (
                         <>
-                            <ChatMessages />
+                            <ChatMessages welcomeMessage={quickActionsConfig.welcomeMessage} />
                             {quickActionsConfig.enabled &&
-                                (!!quickActionsConfig.welcomeMessage ||
-                                    quickActionsConfig.buttons.length > 0) && (
+                                quickActionsConfig.buttons.length > 0 && (
                                 <QuickActions config={quickActionsConfig} />
                             )}
                             <ChatInput />

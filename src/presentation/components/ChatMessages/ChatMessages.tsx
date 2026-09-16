@@ -13,6 +13,11 @@ import { MessageBubble } from './MessageBubble';
 import { DateSeparator } from './DateSeparator';
 import { LoadingIndicator } from './LoadingIndicator';
 import { ContactRequestCard, isContactInteractiveMessage } from './ContactRequestCard';
+import { ChatEmptyState } from '../ChatEmptyState';
+
+interface ChatMessagesProps {
+    welcomeMessage?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Date separator helpers
@@ -164,7 +169,11 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
 // Component
 // ---------------------------------------------------------------------------
 
-export function ChatMessages() {
+function hasRealConversationMessages(messages: ChatMessageParams[]): boolean {
+    return messages.some((m) => m.sender !== 'system' && m.sender !== 'consent');
+}
+
+export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
     const messages = messagesSignal.value;
     const isLoading = isLoadingInitialMessagesSignal.value;
     const hasMore = hasMoreMessagesSignal.value;
@@ -249,8 +258,14 @@ export function ChatMessages() {
         );
     }
 
+    const showEmptyState = !hasRealConversationMessages(messages);
+
     return (
-        <div class="chat-messages" ref={containerRef} style={{ position: 'relative' }}>
+        <div
+            class={`chat-messages${showEmptyState ? ' chat-messages--empty' : ''}`}
+            ref={containerRef}
+            style={{ position: 'relative' }}
+        >
             {/* Top sentinel — triggers loading older messages on scroll-to-top */}
             {hasMore && (
                 <div ref={sentinelRef} class="chat-pagination-sentinel">
@@ -258,7 +273,9 @@ export function ChatMessages() {
                 </div>
             )}
 
-            {renderMessagesWithDateSeparators(messages)}
+            {showEmptyState
+                ? <ChatEmptyState body={welcomeMessage} />
+                : renderMessagesWithDateSeparators(messages)}
         </div>
     );
 }

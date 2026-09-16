@@ -1282,7 +1282,7 @@ class GuidersPublic {
             'enabled' => true,
             'welcomeMessage' => isset($this->settings['quick_actions_welcome_message'])
                 ? $this->settings['quick_actions_welcome_message']
-                : '¡Hola! 👋 ¿En qué puedo ayudarte hoy?',
+                : 'Te lee una persona, no un bot.',
             'showOnFirstOpen' => isset($this->settings['quick_actions_show_on_first_open'])
                 ? (bool)$this->settings['quick_actions_show_on_first_open']
                 : true,

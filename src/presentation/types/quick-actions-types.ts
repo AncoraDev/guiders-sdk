@@ -49,7 +49,7 @@ export interface QuickActionButton {
 export interface QuickActionsConfig {
 	/** Habilitar el sistema de Quick Actions */
 	enabled: boolean;
-	/** Mensaje de bienvenida mostrado sobre los botones */
+	/** Cuerpo del estado vacío del chat (bajo «Cuéntanos qué necesitas») */
 	welcomeMessage?: string;
 	/** Mostrar al abrir el chat por primera vez */
 	showOnFirstOpen?: boolean;

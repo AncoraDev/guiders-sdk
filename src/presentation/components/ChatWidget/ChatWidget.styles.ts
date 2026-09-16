@@ -455,6 +455,55 @@ export function getChatStyles(position: ResolvedPosition): string {
             );
         }
 
+        .chat-messages--empty {
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 96px;
+            -webkit-mask-image: none;
+            mask-image: none;
+            background:
+                radial-gradient(
+                    ellipse 80% 55% at 50% 42%,
+                    var(--gds-color-bg-elevated) 0%,
+                    transparent 72%
+                ),
+                var(--gds-color-bg);
+        }
+
+        .guiders-chat-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 240px;
+            padding: 8px 12px;
+        }
+
+        .guiders-chat-empty-icon {
+            color: var(--gds-color-text-tertiary);
+            margin-bottom: 14px;
+            opacity: 0.85;
+        }
+
+        .guiders-chat-empty-icon svg {
+            display: block;
+        }
+
+        .guiders-chat-empty-title {
+            margin: 0 0 6px;
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.35;
+            color: var(--gds-color-text);
+        }
+
+        .guiders-chat-empty-body {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.45;
+            color: var(--gds-color-text-secondary);
+        }
+
         .chat-message-wrapper {
             position: relative;
             margin-bottom: 16px;
@@ -831,21 +880,6 @@ export function getChatStyles(position: ResolvedPosition): string {
             bottom: 84px;
             z-index: 1;
             transition: opacity var(--gds-duration-slow, 200ms) ease, transform var(--gds-duration-slow, 200ms) ease;
-        }
-
-        .guiders-quick-actions-welcome {
-            padding: 12px 16px;
-            background: var(--gds-color-bg-elevated);
-            border-radius: 12px;
-            margin: 0;
-            color: var(--gds-color-text);
-            font-size: 14px;
-            line-height: 1.5;
-            text-align: center;
-        }
-
-        .guiders-quick-actions:has(.guiders-quick-actions-buttons) .guiders-quick-actions-welcome {
-            margin-bottom: 12px;
         }
 
         .guiders-quick-actions-buttons {

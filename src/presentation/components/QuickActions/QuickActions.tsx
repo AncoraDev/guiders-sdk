@@ -87,10 +87,10 @@ export function QuickActions({ config }: QuickActionsProps) {
     if (hidden || !config.enabled) return null;
 
     const hasButtons = config.buttons.length > 0;
-    if (!config.welcomeMessage && !hasButtons) return null;
+    if (!hasButtons) return null;
 
-    // Hide quick actions (welcome message + buttons) when there are already real
-    // messages in the conversation. System and consent messages don't count.
+    // Hide quick-action buttons once the visitor or a commercial has written.
+    // System and consent messages don't count.
     const hasRealMessages = messagesSignal.value.some(
         (m) => m.sender !== 'system' && m.sender !== 'consent'
     );
@@ -145,9 +145,6 @@ export function QuickActions({ config }: QuickActionsProps) {
 
     return (
         <div class="guiders-quick-actions">
-            {config.welcomeMessage && (
-                <p class="guiders-quick-actions-welcome">{config.welcomeMessage}</p>
-            )}
             {hasButtons && (
                 <div class="guiders-quick-actions-buttons">
                     {/* AC 7: Persistent human CTA — always first */}
