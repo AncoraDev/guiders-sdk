@@ -2,9 +2,11 @@
 
 Índice único de la documentación del repositorio. En la raíz solo quedan:
 
-- [`README.md`](../README.md) — guía de producto e instalación
+- [`README.md`](../README.md) — arranque local (resumen)
 - [`AGENTS.md`](../AGENTS.md) — instrucciones para agentes de código
 - [`CLAUDE.md`](../CLAUDE.md) — arquitectura y patrones de desarrollo
+
+Guía de producto e instalación: [`producto.md`](./producto.md).
 
 La documentación del **plugin WordPress** (guías de usuario, GDPR WP, debugging) sigue en [`wordpress-plugin/`](../wordpress-plugin/) porque viaja con el producto WP; aquí se enlaza.
 
