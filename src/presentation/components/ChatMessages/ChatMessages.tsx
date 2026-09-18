@@ -178,14 +178,11 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
                 (submittedIds.has(requestId) || cancelledIds.has(requestId));
 
             // Si el comercial vuelve a pedir los datos, las solicitudes anteriores ya
-            // resueltas desaparecen para dejar una sola tarjeta activa en el hilo.
-            if (
+            // resueltas pierden su tarjeta para dejar una sola activa en el hilo.
+            const isStaleRequest =
                 contactAction === 'contact_request' &&
                 isResolved &&
-                requestId !== activeRequestId
-            ) {
-                return;
-            }
+                requestId !== activeRequestId;
 
             const key = getDateKey(msg.timestamp);
             if (key !== lastDateKey) {
@@ -194,6 +191,30 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
                 );
                 lastDateKey = key;
             }
+
+            // El comercial escribe el texto junto con la solicitud, pero en el hilo
+            // se lee mejor como mensaje suyo y el formulario aparte.
+            if (contactAction === 'contact_request') {
+                const preface = (msg.systemData?.preface || msg.text || '').trim();
+                if (preface) {
+                    const commercialName = chatDetailSignal.value?.assignedCommercial?.name;
+                    const authorName = msg.senderName || commercialName;
+                    nodes.push(
+                        <MessageBubble
+                            key={`${messageKey(msg, idx)}:preface`}
+                            message={{ ...msg, sender: 'agent', text: preface, systemData: undefined }}
+                            isLastInGroup
+                            authorName={authorName}
+                            authorInitial={authorName?.[0]?.toUpperCase()}
+                        />
+                    );
+                }
+            }
+
+            if (isStaleRequest) {
+                return;
+            }
+
             nodes.push(
                 <ContactRequestCard
                     key={messageKey(msg, idx)}

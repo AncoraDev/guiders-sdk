@@ -19,7 +19,6 @@ import {
     fieldStyle,
     formErrorStyle,
     optionalLabelStyle,
-    prefaceStyle,
     requiredLabelStyle,
     resolveInputStyle,
     subtitleStyle,
@@ -28,7 +27,6 @@ import {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+]?[\d\s\-()]{6,20}$/;
-const DEFAULT_PREFACE = 'Para atenderte mejor, necesitamos unos datos.';
 const DEFAULT_PRIVACY_LABEL = 'He leído y acepto la política de privacidad';
 const DEFAULT_MARKETING_LABEL = 'Acepto recibir comunicaciones';
 
@@ -84,7 +82,6 @@ export function ContactRequestCard({ message, alreadySubmitted, alreadyCancelled
     return (
         <ContactRequestForm
             requestId={message.systemData?.requestId}
-            preface={message.systemData?.preface || message.text || DEFAULT_PREFACE}
             privacyPolicyUrl={message.systemData?.legal?.privacyPolicyUrl}
             privacyLabel={
                 message.systemData?.legal?.privacyCheckboxLabel || DEFAULT_PRIVACY_LABEL
@@ -98,13 +95,11 @@ export function ContactRequestCard({ message, alreadySubmitted, alreadyCancelled
 
 function ContactRequestForm({
     requestId,
-    preface,
     privacyPolicyUrl,
     privacyLabel,
     marketingLabel,
 }: {
     requestId?: string;
-    preface: string;
     privacyPolicyUrl?: string;
     privacyLabel: string;
     marketingLabel: string;
@@ -234,7 +229,6 @@ function ContactRequestForm({
     return (
         <form class="guiders-contact-card" style={cardStyle} onSubmit={onSubmit} noValidate>
             <p style={titleStyle}>Tus datos de contacto</p>
-            <p style={prefaceStyle}>{preface}</p>
             <p style={subtitleStyle}>Nombre, email, teléfono y población son obligatorios.</p>
 
             <Field

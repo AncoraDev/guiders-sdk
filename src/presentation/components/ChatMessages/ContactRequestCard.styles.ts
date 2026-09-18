@@ -87,14 +87,6 @@ export const fieldErrorStyle: CSS = {
     lineHeight: 'var(--gds-line-height-tight, 1.3)',
 };
 
-export const prefaceStyle: CSS = {
-    margin: '0 0 var(--gds-spacing-3, 12px)',
-    fontSize: 'var(--gds-font-size-sm, 13px)',
-    color: 'var(--gds-color-text)',
-    lineHeight: 'var(--gds-line-height-normal, 1.5)',
-    whiteSpace: 'pre-wrap',
-};
-
 export const checkboxRowStyle: CSS = {
     display: 'flex',
     alignItems: 'flex-start',
