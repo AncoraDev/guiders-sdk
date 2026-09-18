@@ -49,6 +49,7 @@ import { QuickActionsConfig } from "../presentation/types/quick-actions-types";
 import { ChatSelectorConfig } from "../presentation/types/chat-selector-types";
 import { debugLog } from "../utils/debug-logger";
 import { CommercialAvailabilityService } from "../services/commercial-availability-service";
+import { LeadCaptureFlowService } from "../services/lead-capture-flow-service";
 import { CommercialAvailabilityConfig } from "../types";
 import { PresenceService } from "../services/presence-service";
 import { PresenceManager, PresenceChatUILike } from "./presence-manager";
@@ -599,7 +600,15 @@ export class TrackingPixelSDK {
 				// No mostrar el botón de chat cuando está fuera de horarios
 				chat.initToggleButton();
 				chat.hideToggleButton();
-				
+
+				// Fuera de horario es justo cuando interesa captar: si la empresa
+				// tiene guion, el botón se mantiene visible con el asistente.
+				void this.activateLeadCaptureIfConfigured(chat).then((hasFlow) => {
+					if (hasFlow) {
+						chat.showToggleButton();
+					}
+				});
+
 				// Mostrar mensaje de horarios si está disponible
 				const fallbackMessage = this.activeHoursValidator.getFallbackMessage();
 				const nextAvailable = this.activeHoursValidator.getNextAvailableTime();
@@ -2116,6 +2125,34 @@ export class TrackingPixelSDK {
 	}
 
 	/**
+	 * Resuelve el guion de captación y lo ofrece en el hilo. Devuelve si hay
+	 * guion, para que quien llama decida qué hacer con el botón del chat.
+	 */
+	private async activateLeadCaptureIfConfigured(chat: ChatUI): Promise<boolean> {
+		try {
+			const service = LeadCaptureFlowService.getInstance();
+			service.configure({
+				domain: window.location.hostname,
+				apiKey: this.apiKey,
+				apiBaseUrl: this.endpoint,
+			});
+
+			const resolved = await service.resolve();
+			if (!resolved.flow) {
+				chat.setLeadCaptureFlow?.(null);
+				return false;
+			}
+
+			chat.setLeadCaptureFlow?.(resolved);
+			chat.setLeadCaptureActive?.(true);
+			return true;
+		} catch (error) {
+			debugLog('📝 [LeadCapture] No se pudo activar el asistente:', error);
+			return false;
+		}
+	}
+
+	/**
 	 * Inicializa el servicio de disponibilidad de comerciales (endpoint API v2)
 	 * @param chat Instancia del ChatUI (también expone la API de toggle)
 	 */
@@ -2159,21 +2196,32 @@ export class TrackingPixelSDK {
 				if (this.commercialAvailabilityConfig?.showBadge) {
 					chat.updateUnreadCount(count);
 				}
+				// Hay alguien atendiendo: el asistente deja de ofrecerse, salvo que
+				// el visitante ya lo haya empezado.
+				chat.setLeadCaptureActive?.(false);
 			} else {
 				presenceSvc?.applyCommercialStatus?.('offline');
 				chat.setOnlineCommercialCount?.(0);
 				chat.hideUnreadBadge();
-				if (hideWhenUnavailable) {
-					debugLog(
-						'📡 [CommercialAvailability] Sin soporte — ocultando chat'
-					);
-					if (chat.isVisible()) {
-						chat.hide();
+				// Sin nadie conectado es cuando más interesa captar: si la empresa
+				// tiene guion, el widget se mantiene visible con el asistente.
+				void this.activateLeadCaptureIfConfigured(chat).then((hasFlow) => {
+					if (hasFlow) {
+						chat.showToggleButton();
+						return;
 					}
-					chat.hideToggleButton();
-				} else {
-					chat.showToggleButton();
-				}
+					if (hideWhenUnavailable) {
+						debugLog(
+							'📡 [CommercialAvailability] Sin soporte — ocultando chat'
+						);
+						if (chat.isVisible()) {
+							chat.hide();
+						}
+						chat.hideToggleButton();
+					} else {
+						chat.showToggleButton();
+					}
+				});
 			}
 		});
 		// Start: REST initial check + WebSocket subscription

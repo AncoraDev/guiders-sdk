@@ -57,6 +57,14 @@ export interface ContactFormLegalSnapshot {
 	marketingCheckboxLabel: string;
 }
 
+/** Respuesta del visitante en un paso del guion de captación. */
+export interface LeadCaptureAnswer {
+	stepId: string;
+	prompt: string;
+	answer: string;
+	field?: string;
+}
+
 export interface MessageSystemData {
 	action?: string;
 	fromUserId?: string;
@@ -69,6 +77,59 @@ export interface MessageSystemData {
 	legal?: ContactFormLegalSnapshot;
 	acceptedPrivacyPolicy?: boolean;
 	acceptedMarketing?: boolean;
+	/** Captación sin agentes: guion recorrido y respuestas */
+	flowId?: string;
+	answers?: LeadCaptureAnswer[];
+	capturedWithoutAgent?: boolean;
+}
+
+export type LeadCaptureStepType = 'message' | 'choice' | 'text';
+
+export interface LeadCaptureOption {
+	id: string;
+	label: string;
+	next?: string | null;
+}
+
+export interface LeadCaptureStep {
+	id: string;
+	type: LeadCaptureStepType;
+	prompt: string;
+	options?: LeadCaptureOption[];
+	field?: string;
+	validation?: 'email' | 'phone' | 'none';
+	required?: boolean;
+	next?: string | null;
+}
+
+export interface LeadCaptureFlowData {
+	id: string;
+	name: string;
+	enabled: boolean;
+	intro: { title: string; body: string; ctaLabel: string };
+	startStepId: string;
+	steps: LeadCaptureStep[];
+}
+
+/**
+ * Respuesta de /v2/lead-capture/flow/resolve: `flow` es null cuando la empresa
+ * no tiene guion activo y entonces el chat se comporta como siempre.
+ */
+export interface ResolvedLeadCaptureFlow {
+	flow: LeadCaptureFlowData | null;
+	legal: ContactFormLegalSnapshot;
+}
+
+export interface LeadCaptureSubmission {
+	flowId?: string;
+	nombre: string;
+	apellidos?: string;
+	email?: string;
+	telefono?: string;
+	poblacion?: string;
+	acceptedPrivacyPolicy: true;
+	acceptedMarketing?: boolean;
+	answers?: LeadCaptureAnswer[];
 }
 
 export interface MessageV2 {

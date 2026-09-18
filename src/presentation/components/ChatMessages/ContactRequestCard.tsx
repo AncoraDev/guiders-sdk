@@ -24,9 +24,8 @@ import {
     subtitleStyle,
     titleStyle,
 } from './ContactRequestCard.styles';
+import { EMAIL_RE, PHONE_RE } from './contact-validation';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_RE = /^[+]?[\d\s\-()]{6,20}$/;
 const DEFAULT_PRIVACY_LABEL = 'He leído y acepto la política de privacidad';
 const DEFAULT_MARKETING_LABEL = 'Acepto recibir comunicaciones';
 

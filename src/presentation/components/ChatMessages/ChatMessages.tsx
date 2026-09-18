@@ -7,6 +7,11 @@ import {
     isPaginatingSignal,
     chatDetailSignal,
 } from '../../signals';
+import {
+    leadCaptureActiveSignal,
+    leadCaptureFlowSignal,
+    leadCaptureVisitorWroteSignal,
+} from '../../signals/leadCaptureState';
 import { ChatMessageParams } from '../../types/chat-types';
 import { useScrollToBottom } from '../../hooks';
 import { usePagination } from '../../hooks/usePagination';
@@ -15,6 +20,11 @@ import { DateSeparator } from './DateSeparator';
 import { LoadingIndicator } from './LoadingIndicator';
 import { ContactRequestCard, isContactInteractiveMessage } from './ContactRequestCard';
 import { ChatEmptyState } from '../ChatEmptyState';
+import { LeadCaptureWizard, isLeadCaptureMessage } from '../LeadCapture';
+import {
+    centeredThreadInnerStyle,
+    centeredThreadStyle,
+} from '../LeadCapture/LeadCaptureWizard.styles';
 
 interface ChatMessagesProps {
     welcomeMessage?: string;
@@ -158,6 +168,12 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
             contactAction === 'contact_cancellation' ||
             contactAction === 'contact_confirmation'
         ) {
+            return;
+        }
+
+        // El resumen de la captación lo cuenta el propio asistente con su tarjeta
+        // de cierre; en el hilo del visitante no aporta nada como burbuja.
+        if (isLeadCaptureMessage(contactAction)) {
             return;
         }
 
@@ -358,6 +374,24 @@ export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
         return () => observer.disconnect();
     }, [loadOlderMessages, hasMore]);
 
+    // Sin nadie atendiendo el asistente ocupa el hilo entero: no tiene sentido
+    // enseñar la conversación anterior si ahora no hay quien la continúe. En
+    // cuanto el visitante escribe, vuelve su hilo normal con el historial.
+    const wizardOwnsThread =
+        !!leadCaptureFlowSignal.value?.flow &&
+        leadCaptureActiveSignal.value &&
+        !leadCaptureVisitorWroteSignal.value;
+
+    if (wizardOwnsThread) {
+        return (
+            <div class="chat-messages" ref={containerRef} style={centeredThreadStyle}>
+                <div style={centeredThreadInnerStyle}>
+                    <LeadCaptureWizard centered />
+                </div>
+            </div>
+        );
+    }
+
     if (isLoading) {
         return (
             <div class="chat-messages" ref={containerRef}>
@@ -384,6 +418,9 @@ export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
             {showEmptyState
                 ? <ChatEmptyState body={welcomeMessage} />
                 : renderMessagesWithDateSeparators(messages)}
+
+            {/* Asistente de captación: solo se pinta si hay guion y nadie atendiendo */}
+            <LeadCaptureWizard />
         </div>
     );
 }

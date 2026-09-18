@@ -5,7 +5,7 @@ import { PresenceService } from '../../services/presence-service';
 import type { PresenceLike } from '../types/presence-types';
 import { AssignedCommercialInfo, ChatStatus } from '../../types/websocket-types';
 import { fetchChatDetail } from '../../services/chat-detail-service';
-import { ChatV2 } from '../../types';
+import { ChatV2, ResolvedLeadCaptureFlow } from '../../types';
 import { debugLog, debugWarn, debugError } from '../../utils/debug-logger';
 import {
     isVisibleSignal,
@@ -29,6 +29,11 @@ import {
     trackQuickActionSignal,
     chatInitializedSignal,
     chatSelectorEnabledSignal,
+    leadCaptureFlowSignal,
+    leadCaptureActiveSignal,
+    leadCaptureStartedSignal,
+    markLeadCaptureVisitorWrote,
+    hydrateLeadCaptureVisitorWrote,
 } from '../signals';
 import { messagesSignal, sendMessageCallbackSignal, loadChatTriggerSignal, loadedChatIdSignal } from '../signals/messagesState';
 import {
@@ -338,6 +343,8 @@ export class ChatUIBridge {
                 timestamp: Date.now(),
                 id: optimisticId,
             } satisfies ChatMessageParams & { id: string };
+            // Si prefiere escribir, el asistente deja de ocupar el hilo.
+            markLeadCaptureVisitorWrote(chatIdSignal.peek());
             this.appendMessage(optimisticMsg);
 
             // ── Invoke SDK callback ───────────────────────────────────────────
@@ -563,6 +570,7 @@ export class ChatUIBridge {
         }
         if (chatId === loadedChatIdSignal.value && !force) return;
         chatIdSignal.value = chatId;
+        hydrateLeadCaptureVisitorWrote(chatId);
         // Increment trigger — usePagination hook will pick this up and load messages
         loadChatTriggerSignal.value = (loadChatTriggerSignal.value || 0) + 1;
         // Always refresh chat details so avatar, name and presence status reflect
@@ -917,6 +925,21 @@ export class ChatUIBridge {
     setOnlineCommercialCount(count: number): void {
         const next = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
         onlineCommercialCountSignal.value = next;
+    }
+
+    /** Guion de captación resuelto para este sitio (null si no hay ninguno). */
+    setLeadCaptureFlow(resolved: ResolvedLeadCaptureFlow | null): void {
+        leadCaptureFlowSignal.value = resolved?.flow ? resolved : null;
+    }
+
+    /**
+     * Ofrece o retira el asistente de captación. Si el visitante ya lo empezó no
+     * se le quita de debajo aunque se conecte un comercial.
+     */
+    setLeadCaptureActive(active: boolean): void {
+        if (!active && leadCaptureStartedSignal.value) return;
+        if (active && !leadCaptureFlowSignal.value) return;
+        leadCaptureActiveSignal.value = active;
     }
     hideUnreadBadge(): void { this.toggleBridge.hideUnreadBadge(); }
     onToggle(callback: (visible: boolean) => void): void { this.toggleBridge.onToggle(callback); }

@@ -63,7 +63,15 @@ export function ChatHeader({ options }: ChatHeaderProps) {
     });
 
     useEffect(() => {
-        if (showHumanAvatar === displayState.showHuman) return undefined;
+        if (showHumanAvatar === displayState.showHuman) {
+            // El estado volvió a su sitio antes de acabar el fundido (típico al
+            // cargar: llega el comercial asignado y justo después su presencia
+            // offline). Sin esto la cabecera se queda invisible.
+            if (displayState.opacity !== 1) {
+                setDisplayState(prev => ({ ...prev, opacity: 1 }));
+            }
+            return undefined;
+        }
         setDisplayState(prev => ({ ...prev, opacity: 0 }));
         const t = setTimeout(() => {
             setDisplayState({ showHuman: showHumanAvatar, opacity: 1 });

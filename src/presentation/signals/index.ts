@@ -48,6 +48,16 @@ export {
 } from './messagesState';
 export type { SendMessageCallback } from './messagesState';
 
+// --- leadCaptureState ---
+export {
+    leadCaptureFlowSignal,
+    leadCaptureActiveSignal,
+    leadCaptureStartedSignal,
+    leadCaptureVisitorWroteSignal,
+    markLeadCaptureVisitorWrote,
+    hydrateLeadCaptureVisitorWrote,
+} from './leadCaptureState';
+
 // --- presenceState ---
 export { presenceServiceSignal, commercialPresenceMapSignal } from './presenceState';
 

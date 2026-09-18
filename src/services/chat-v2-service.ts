@@ -1,6 +1,6 @@
 import { EndpointManager } from '../core/endpoint-manager';
 import { debugLog, debugWarn, debugError } from '../utils/debug-logger';
-import { ChatV2, ChatListV2, CreateChatResponse } from '../types';
+import { ChatV2, ChatListV2, CreateChatResponse, LeadCaptureSubmission } from '../types';
 import { getCommonHeaders, getCommonFetchOptions } from '../utils/http-headers';
 
 /**
@@ -596,6 +596,33 @@ export class ChatV2Service {
 			const errorText = await response.text();
 			debugError('[ChatV2Service] ❌ Error al enviar datos de contacto:', errorText);
 			throw new Error(`Error al enviar datos (${response.status})`);
+		}
+
+		return response.json();
+	}
+
+	/**
+	 * Envía lo recogido por el asistente de captación. El backend guarda el lead
+	 * y deja el resumen en el hilo para el comercial.
+	 */
+	async submitLeadCapture(
+		chatId: string,
+		data: LeadCaptureSubmission,
+	): Promise<any> {
+		const endpoints = EndpointManager.getInstance();
+		const baseEndpoint = (localStorage.getItem('pixelEndpoint') || endpoints.getEndpoint());
+		const apiRoot = baseEndpoint.endsWith('/api') ? baseEndpoint : `${baseEndpoint}/api`;
+		const url = `${apiRoot}/v2/chats/${chatId}/lead-capture`;
+
+		const response = await this.fetchWithReauth(
+			url,
+			this.getFetchOptions('POST', JSON.stringify(data)),
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			debugError('[ChatV2Service] ❌ Error al enviar la captación:', errorText);
+			throw new Error(`Error al enviar tus datos (${response.status})`);
 		}
 
 		return response.json();
