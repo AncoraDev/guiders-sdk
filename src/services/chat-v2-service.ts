@@ -576,8 +576,10 @@ export class ChatV2Service {
 			nombre: string;
 			email: string;
 			telefono: string;
+			poblacion: string;
+			acceptedPrivacyPolicy: boolean;
+			acceptedMarketing: boolean;
 			apellidos?: string;
-			poblacion?: string;
 		},
 	): Promise<any> {
 		const endpoints = EndpointManager.getInstance();
@@ -594,6 +596,26 @@ export class ChatV2Service {
 			const errorText = await response.text();
 			debugError('[ChatV2Service] ❌ Error al enviar datos de contacto:', errorText);
 			throw new Error(`Error al enviar datos (${response.status})`);
+		}
+
+		return response.json();
+	}
+
+	async cancelContactData(chatId: string): Promise<any> {
+		const endpoints = EndpointManager.getInstance();
+		const baseEndpoint = (localStorage.getItem('pixelEndpoint') || endpoints.getEndpoint());
+		const apiRoot = baseEndpoint.endsWith('/api') ? baseEndpoint : `${baseEndpoint}/api`;
+		const url = `${apiRoot}/v2/chats/${chatId}/contact-cancel`;
+
+		const response = await this.fetchWithReauth(
+			url,
+			this.getFetchOptions('POST', JSON.stringify({})),
+		);
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			debugError('[ChatV2Service] ❌ Error al cancelar datos de contacto:', errorText);
+			throw new Error(`Error al cancelar el formulario (${response.status})`);
 		}
 
 		return response.json();

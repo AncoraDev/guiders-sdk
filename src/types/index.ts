@@ -51,14 +51,24 @@ export interface ContactRequestPayload {
 	poblacion?: string;
 }
 
+export interface ContactFormLegalSnapshot {
+	privacyPolicyUrl: string;
+	privacyCheckboxLabel: string;
+	marketingCheckboxLabel: string;
+}
+
 export interface MessageSystemData {
 	action?: string;
 	fromUserId?: string;
 	toUserId?: string;
 	reason?: string;
 	requestId?: string;
-	status?: 'pending' | 'submitted' | 'confirmed';
+	status?: 'pending' | 'submitted' | 'confirmed' | 'cancelled';
 	data?: ContactRequestPayload;
+	preface?: string;
+	legal?: ContactFormLegalSnapshot;
+	acceptedPrivacyPolicy?: boolean;
+	acceptedMarketing?: boolean;
 }
 
 export interface MessageV2 {

@@ -87,15 +87,48 @@ export const fieldErrorStyle: CSS = {
     lineHeight: 'var(--gds-line-height-tight, 1.3)',
 };
 
+export const prefaceStyle: CSS = {
+    margin: '0 0 var(--gds-spacing-3, 12px)',
+    fontSize: 'var(--gds-font-size-sm, 13px)',
+    color: 'var(--gds-color-text)',
+    lineHeight: 'var(--gds-line-height-normal, 1.5)',
+    whiteSpace: 'pre-wrap',
+};
+
+export const checkboxRowStyle: CSS = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 'var(--gds-spacing-2, 8px)',
+    margin: '0 0 var(--gds-spacing-3, 12px)',
+    fontSize: 'var(--gds-font-size-xs, 11px)',
+    color: 'var(--gds-color-text-secondary)',
+    lineHeight: 'var(--gds-line-height-normal, 1.5)',
+};
+
+export const checkboxInputStyle: CSS = {
+    marginTop: '2px',
+    flexShrink: 0,
+};
+
+export const checkboxLinkStyle: CSS = {
+    color: 'var(--gds-color-primary)',
+    textDecoration: 'underline',
+};
+
 export const formErrorStyle: CSS = {
     margin: '0 0 var(--gds-spacing-3, 12px)',
     fontSize: 'var(--gds-font-size-xs, 11px)',
     color: 'var(--gds-color-error)',
 };
 
-export const buttonStyle: CSS = {
-    width: '100%',
+export const actionsRowStyle: CSS = {
+    display: 'flex',
+    gap: 'var(--gds-spacing-2, 8px)',
     marginTop: 'var(--gds-spacing-1, 4px)',
+};
+
+export const buttonStyle: CSS = {
+    flex: 1,
     padding: 'var(--gds-spacing-3, 12px) var(--gds-spacing-4, 16px)',
     border: 'none',
     borderRadius: 'var(--gds-radius-md, 8px)',
@@ -105,6 +138,13 @@ export const buttonStyle: CSS = {
     fontWeight: 'var(--gds-font-weight-semibold, 600)' as unknown as number,
     fontFamily: 'inherit',
     cursor: 'pointer',
+};
+
+export const ghostButtonStyle: CSS = {
+    ...buttonStyle,
+    background: 'transparent',
+    color: 'var(--gds-color-text-secondary)',
+    border: '1px solid var(--gds-color-border)',
 };
 
 export const buttonDisabledStyle: CSS = {

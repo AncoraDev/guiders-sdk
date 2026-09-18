@@ -83,7 +83,11 @@ function formatTransferTime(timestamp?: number): string | undefined {
 function submittedRequestIds(messages: ChatMessageParams[]): Set<string> {
     const ids = new Set<string>();
     messages.forEach((msg) => {
-        if (msg.systemData?.action === 'contact_submission' && msg.systemData.requestId) {
+        if (
+            (msg.systemData?.action === 'contact_submission' ||
+                msg.systemData?.action === 'contact_confirmation') &&
+            msg.systemData.requestId
+        ) {
             ids.add(msg.systemData.requestId);
         }
         if (msg.systemData?.action === 'contact_request' && (msg.systemData.status === 'submitted' || msg.systemData.status === 'confirmed') && msg.systemData.requestId) {
@@ -93,10 +97,48 @@ function submittedRequestIds(messages: ChatMessageParams[]): Set<string> {
     return ids;
 }
 
+function cancelledRequestIds(messages: ChatMessageParams[]): Set<string> {
+    const ids = new Set<string>();
+    messages.forEach((msg) => {
+        if (msg.systemData?.action === 'contact_cancellation' && msg.systemData.requestId) {
+            ids.add(msg.systemData.requestId);
+        }
+        if (msg.systemData?.action === 'contact_request' && msg.systemData.status === 'cancelled' && msg.systemData.requestId) {
+            ids.add(msg.systemData.requestId);
+        }
+    });
+    return ids;
+}
+
+/** requestIds que tienen su solicitud original en el historial cargado. */
+function knownRequestIds(messages: ChatMessageParams[]): Set<string> {
+    const ids = new Set<string>();
+    messages.forEach((msg) => {
+        if (msg.systemData?.action === 'contact_request' && msg.systemData.requestId) {
+            ids.add(msg.systemData.requestId);
+        }
+    });
+    return ids;
+}
+
+/** Última solicitud del hilo (los mensajes llegan en orden cronológico). */
+function latestRequestId(messages: ChatMessageParams[]): string | undefined {
+    let latest: string | undefined;
+    messages.forEach((msg) => {
+        if (msg.systemData?.action === 'contact_request' && msg.systemData.requestId) {
+            latest = msg.systemData.requestId;
+        }
+    });
+    return latest;
+}
+
 function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[] {
     const nodes: VNode[] = [];
     let lastDateKey = '';
     const submittedIds = submittedRequestIds(messages);
+    const cancelledIds = cancelledRequestIds(messages);
+    const requestIds = knownRequestIds(messages);
+    const activeRequestId = latestRequestId(messages);
 
     messages.forEach((msg, idx) => {
         // Handoff system messages render as DateSeparator type='handoff', not a bubble
@@ -108,7 +150,43 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
             return;
         }
 
+        const contactAction = msg.systemData?.action;
+
+        // Cancelación y confirmación solo cambian el estado de la tarjeta original:
+        // nunca se pintan como tarjeta propia ni como burbuja de texto.
+        if (
+            contactAction === 'contact_cancellation' ||
+            contactAction === 'contact_confirmation'
+        ) {
+            return;
+        }
+
+        // El envío se refleja en la tarjeta de la solicitud; solo se pinta por su
+        // cuenta si esa solicitud no está en el historial cargado.
+        if (
+            contactAction === 'contact_submission' &&
+            msg.systemData?.requestId &&
+            requestIds.has(msg.systemData.requestId)
+        ) {
+            return;
+        }
+
         if (isContactInteractiveMessage(msg)) {
+            const requestId = msg.systemData?.requestId;
+            const isResolved =
+                !!requestId &&
+                (submittedIds.has(requestId) || cancelledIds.has(requestId));
+
+            // Si el comercial vuelve a pedir los datos, las solicitudes anteriores ya
+            // resueltas desaparecen para dejar una sola tarjeta activa en el hilo.
+            if (
+                contactAction === 'contact_request' &&
+                isResolved &&
+                requestId !== activeRequestId
+            ) {
+                return;
+            }
+
             const key = getDateKey(msg.timestamp);
             if (key !== lastDateKey) {
                 nodes.push(
@@ -116,12 +194,12 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
                 );
                 lastDateKey = key;
             }
-            const requestId = msg.systemData?.requestId;
             nodes.push(
                 <ContactRequestCard
                     key={messageKey(msg, idx)}
                     message={msg}
                     alreadySubmitted={!!requestId && submittedIds.has(requestId)}
+                    alreadyCancelled={!!requestId && cancelledIds.has(requestId)}
                 />
             );
             return;
