@@ -16,7 +16,7 @@ import { DateSeparator } from './DateSeparator';
 import { LoadingIndicator } from './LoadingIndicator';
 import { ContactRequestCard, isContactInteractiveMessage } from './ContactRequestCard';
 import { ChatEmptyState } from '../ChatEmptyState';
-import { LeadCaptureWizard, isLeadCaptureMessage } from '../LeadCapture';
+import { LeadCaptureWizard, ThanksCard, isLeadCaptureMessage } from '../LeadCapture';
 import {
     centeredThreadInnerStyle,
     centeredThreadStyle,
@@ -167,9 +167,18 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
             return;
         }
 
-        // El resumen de la captación lo cuenta el propio asistente con su tarjeta
-        // de cierre; en el hilo del visitante no aporta nada como burbuja.
+        // El cierre del asistente va en el sitio del envío, no al final del hilo.
         if (isLeadCaptureMessage(contactAction)) {
+            const captureKey = getDateKey(msg.timestamp);
+            if (captureKey !== lastDateKey) {
+                nodes.push(
+                    <DateSeparator key={`sep-${captureKey}`} date={getDate(msg.timestamp)} />
+                );
+                lastDateKey = captureKey;
+            }
+            nodes.push(
+                <ThanksCard key={messageKey(msg, idx)} />
+            );
             return;
         }
 
@@ -290,7 +299,11 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
 // ---------------------------------------------------------------------------
 
 function hasRealConversationMessages(messages: ChatMessageParams[]): boolean {
-    return messages.some((m) => m.sender !== 'system' && m.sender !== 'consent');
+    return messages.some(
+        (m) =>
+            (m.sender !== 'system' && m.sender !== 'consent') ||
+            isLeadCaptureMessage(m.systemData?.action)
+    );
 }
 
 export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {

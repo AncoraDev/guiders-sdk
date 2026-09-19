@@ -1,1 +1,5 @@
-export { LeadCaptureWizard, isLeadCaptureMessage } from './LeadCaptureWizard';
+export {
+    LeadCaptureWizard,
+    ThanksCard,
+    isLeadCaptureMessage,
+} from './LeadCaptureWizard';

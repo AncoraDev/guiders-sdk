@@ -106,10 +106,9 @@ export function LeadCaptureWizard({ centered = false }: { centered?: boolean } =
     const cardStyle = centered ? centerCard(wizardCardStyle) : wizardCardStyle;
     const centeredText = centered ? { textAlign: 'center' as const } : {};
 
-    // El asistente ya cumplió: aunque el hilo vuelva a la normalidad (y con él
-    // el composer), la tarjeta de cierre se queda como último mensaje.
-    if (completed) return <ThanksCard centered={centered} />;
-    if (mode === 'off') return null;
+    // El cierre se pinta en el mensaje del hilo, no al final: si no, lo que
+    // escriba el comercial quedaría encima de «Ya está, tenemos tus datos».
+    if (completed || mode === 'off') return null;
 
     const trail = current.trail ?? [];
 
@@ -348,7 +347,8 @@ function BackButton({ onBack }: { onBack?: () => void }) {
     );
 }
 
-function ThanksCard({ centered = false }: { centered?: boolean }) {
+/** Cierre del guion: se pinta en el sitio del mensaje de envío. */
+export function ThanksCard({ centered = false }: { centered?: boolean }) {
     return (
         <div
             class="guiders-lead-capture"
