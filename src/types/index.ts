@@ -120,6 +120,26 @@ export interface ResolvedLeadCaptureFlow {
 	legal: ContactFormLegalSnapshot;
 }
 
+/** Situación de la captación de un visitante, tal como la guarda el backend. */
+export type LeadCaptureStatus = 'none' | 'in_progress' | 'completed';
+
+export type LeadCapturePhase = 'intro' | 'steps' | 'final' | 'done';
+
+/** Punto exacto del guion donde se quedó el visitante. */
+export interface LeadCaptureProgress {
+	phase: LeadCapturePhase;
+	stepId: string | null;
+	answers: LeadCaptureAnswer[];
+	/** Pasos ya recorridos, en orden: permite volver atrás a corregir. */
+	trail: string[];
+}
+
+/** Captación a medias recuperada para reanudarla. */
+export interface LeadCaptureSession {
+	status: LeadCaptureStatus;
+	progress: LeadCaptureProgress | null;
+}
+
 export interface LeadCaptureSubmission {
 	flowId?: string;
 	nombre: string;

@@ -596,6 +596,19 @@ export function getChatStyles(position: ResolvedPosition): string {
             border-color: color-mix(in srgb, var(--gds-color-primary, #3b82f6) 45%, transparent);
         }
 
+        /* Composer bloqueado: el asistente de captación es la única vía */
+        .chat-input-container--locked {
+            opacity: 0.6;
+            border-color: color-mix(in srgb, var(--gds-color-text-tertiary, #9ca3af) 28%, transparent);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .chat-input-container--locked .chat-input-field,
+        .chat-input-container--locked .chat-send-btn {
+            cursor: not-allowed;
+        }
+
         .chat-input-inner {
             position: relative;
             z-index: 1;
@@ -1430,5 +1443,129 @@ export function getChatStyles(position: ResolvedPosition): string {
         .chat-header-presence-text--away    { color: #fcd34d; }
         .chat-header-presence-text--busy    { color: #fca5a5; }
         .chat-header-presence-text--offline { color: rgba(255,255,255,0.55); }
+
+        /* ── Asistente de captación: opciones, progreso y paso a paso ── */
+        @keyframes gds-lc-enter {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* Cada fase (intro, paso, cierre) entra con un fundido corto */
+        .guiders-lead-capture {
+            animation: gds-lc-enter 220ms var(--gds-ease-out, cubic-bezier(0.16,1,0.3,1)) both;
+        }
+
+        /* El contenido del paso se remonta por id: el fundido marca el avance
+           mientras la cabecera de progreso se queda quieta. */
+        .guiders-lc-step {
+            animation: gds-lc-enter 180ms var(--gds-ease-out, cubic-bezier(0.16,1,0.3,1)) both;
+        }
+
+        .guiders-lc-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border-radius: var(--gds-radius-md, 8px);
+            border: 1px solid var(--gds-color-border);
+            background: var(--gds-color-bg);
+            color: var(--gds-color-text);
+            font-family: inherit;
+            font-size: var(--gds-font-size-sm, 13px);
+            line-height: 1.4;
+            text-align: left;
+            cursor: pointer;
+            transition:
+                background 140ms ease,
+                border-color 140ms ease,
+                transform 140ms ease;
+        }
+
+        .guiders-lc-option:hover {
+            border-color: color-mix(in srgb, var(--gds-color-primary) 55%, transparent);
+            background: color-mix(in srgb, var(--gds-color-primary) 10%, var(--gds-color-bg));
+        }
+
+        .guiders-lc-option:active { transform: scale(0.99); }
+
+        .guiders-lc-option:focus-visible {
+            outline: none;
+            border-color: var(--gds-color-primary);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--gds-color-primary) 18%, transparent);
+        }
+
+        /* Confirmación visual del clic antes de pasar al siguiente paso */
+        .guiders-lc-option--chosen {
+            border-color: var(--gds-color-primary);
+            background: color-mix(in srgb, var(--gds-color-primary) 16%, var(--gds-color-bg));
+        }
+
+        .guiders-lc-option[disabled] { cursor: default; }
+        .guiders-lc-option[disabled]:not(.guiders-lc-option--chosen) { opacity: 0.5; }
+
+        .guiders-lc-option-arrow {
+            flex-shrink: 0;
+            color: var(--gds-color-primary);
+            opacity: 0;
+            transform: translateX(-4px);
+            transition: opacity 140ms ease, transform 140ms ease;
+        }
+
+        .guiders-lc-option:hover .guiders-lc-option-arrow,
+        .guiders-lc-option:focus-visible .guiders-lc-option-arrow,
+        .guiders-lc-option--chosen .guiders-lc-option-arrow {
+            opacity: 1;
+            transform: none;
+        }
+
+        .guiders-lc-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            border: none;
+            border-radius: var(--gds-radius-md, 8px);
+            background: transparent;
+            color: var(--gds-color-text-tertiary);
+            font-family: inherit;
+            font-size: var(--gds-font-size-xs, 11px);
+            cursor: pointer;
+            transition: color 140ms ease, background 140ms ease;
+        }
+
+        .guiders-lc-back:hover {
+            color: var(--gds-color-text);
+            background: color-mix(in srgb, var(--gds-color-text) 8%, transparent);
+        }
+
+        .guiders-lc-back:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--gds-color-primary) 18%, transparent);
+        }
+
+        .guiders-lc-progress-track {
+            height: 3px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--gds-color-text) 12%, transparent);
+            overflow: hidden;
+        }
+
+        .guiders-lc-progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--gds-color-primary);
+            transition: width 280ms var(--gds-ease-out, cubic-bezier(0.16,1,0.3,1));
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .guiders-lead-capture,
+            .guiders-lc-step { animation: none; }
+            .guiders-lc-option,
+            .guiders-lc-option-arrow,
+            .guiders-lc-progress-fill { transition: none; }
+        }
     `;
 }

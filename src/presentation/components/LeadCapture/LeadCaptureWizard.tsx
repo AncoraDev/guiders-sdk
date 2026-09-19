@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ChatV2Service } from '../../../services/chat-v2-service';
+import { LeadCaptureSessionService } from '../../../services/lead-capture-session-service';
 import {
     chatIdSignal,
-    leadCaptureActiveSignal,
+    leadCaptureCompletedSignal,
     leadCaptureFlowSignal,
-    leadCaptureStartedSignal,
+    leadCaptureModeSignal,
+    leadCaptureResumeSignal,
+    markLeadCaptureCompleted,
+    markLeadCaptureEngaged,
     messagesSignal,
 } from '../../signals';
+import { isVisibleSignal } from '../../signals/chatState';
 import {
     LeadCaptureAnswer,
+    LeadCaptureFlowData,
+    LeadCaptureProgress,
     LeadCaptureStep,
     ContactFormLegalSnapshot,
 } from '../../../types';
@@ -33,38 +40,42 @@ import {
 } from '../ChatMessages/ContactRequestCard.styles';
 import { EMAIL_RE, PHONE_RE } from '../ChatMessages/contact-validation';
 import {
+    backRowStyle,
     centerCard,
     introBodyStyle,
-    optionButtonStyle,
     optionsColumnStyle,
     progressStyle,
     promptStyle,
     recapAnswerStyle,
+    recapCheckStyle,
     recapItemStyle,
     recapListStyle,
+    recapMoreStyle,
+    stepCounterStyle,
+    stepHeaderStyle,
     wizardCardStyle,
 } from './LeadCaptureWizard.styles';
-
-const STORAGE_PREFIX = 'guiders_lead_capture_';
 
 const DEFAULT_PRIVACY_LABEL = 'He leído y acepto la política de privacidad';
 const DEFAULT_MARKETING_LABEL = 'Acepto recibir comunicaciones';
 
-type Phase = 'intro' | 'steps' | 'final' | 'done';
-
 type ContactField = 'nombre' | 'apellidos' | 'email' | 'telefono' | 'poblacion';
 
-interface WizardProgress {
-    phase: Phase;
-    stepId: string | null;
-    answers: LeadCaptureAnswer[];
-}
-
-const INITIAL_PROGRESS: WizardProgress = {
+const INITIAL_PROGRESS: LeadCaptureProgress = {
     phase: 'intro',
     stepId: null,
     answers: [],
+    trail: [],
 };
+
+/** Respuestas visibles en el resumen; las anteriores se cuentan en una línea. */
+const RECAP_VISIBLE = 3;
+
+/** Móvil: el foco automático abriría el teclado y taparía la pregunta. */
+const AUTOFOCUS_MIN_WIDTH_PX = 641;
+
+/** Confirmación visual de la opción elegida antes de pasar al siguiente paso. */
+const OPTION_FEEDBACK_MS = 160;
 
 /** El mensaje del backend deja constancia de que la captación ya se completó. */
 export function isLeadCaptureMessage(action?: string): boolean {
@@ -75,65 +86,94 @@ export function isLeadCaptureMessage(action?: string): boolean {
  * Asistente que guía al visitante hasta dejar sus datos cuando no hay ningún
  * comercial conectado. El paso final siempre pide los datos de contacto y el
  * consentimiento, así que un guion mal montado nunca produce un lead inservible.
+ *
+ * Dónde se pinta lo decide `leadCaptureModeSignal`:
+ * - `offer`: una tarjeta al final del hilo para empezar o reanudar.
+ * - `thread`: el guion es el hilo entero y el composer queda bloqueado.
  */
 export function LeadCaptureWizard({ centered = false }: { centered?: boolean } = {}) {
     const resolved = leadCaptureFlowSignal.value;
-    const active = leadCaptureActiveSignal.value;
+    const mode = leadCaptureModeSignal.value;
     const chatId = chatIdSignal.value;
-    const messages = messagesSignal.value;
-
-    const [progress, setProgress] = useState<WizardProgress>(INITIAL_PROGRESS);
-    const hydratedChatId = useRef<string | null>(null);
-
-    // El progreso vive en sessionStorage para que un recargo no obligue a
-    // empezar de nuevo el guion.
-    useEffect(() => {
-        if (!chatId || hydratedChatId.current === chatId) return;
-        hydratedChatId.current = chatId;
-        const stored = readProgress(chatId);
-        if (stored) {
-            setProgress(stored);
-            if (stored.phase !== 'intro') leadCaptureStartedSignal.value = true;
-        }
-    }, [chatId]);
+    // El progreso vive en la señal, no en el componente: al pasar de tarjeta a
+    // hilo (y al revés) el asistente se remonta y se perdería lo contestado.
+    const current = leadCaptureResumeSignal.value ?? INITIAL_PROGRESS;
+    const completed = leadCaptureCompletedSignal.value;
 
     const flow = resolved?.flow ?? null;
-    if (!flow || !active) return null;
+    if (!flow) return null;
 
     const cardStyle = centered ? centerCard(wizardCardStyle) : wizardCardStyle;
     const centeredText = centered ? { textAlign: 'center' as const } : {};
 
-    const alreadySubmitted = messages.some((msg) =>
-        isLeadCaptureMessage(msg.systemData?.action)
-    );
+    // El asistente ya cumplió: aunque el hilo vuelva a la normalidad (y con él
+    // el composer), la tarjeta de cierre se queda como último mensaje.
+    if (completed) return <ThanksCard centered={centered} />;
+    if (mode === 'off') return null;
 
-    if (alreadySubmitted || progress.phase === 'done') {
-        return <ThanksCard centered={centered} />;
-    }
+    const trail = current.trail ?? [];
 
-    const advance = (next: WizardProgress) => {
-        setProgress(next);
-        writeProgress(chatId, next);
+    const advance = (next: LeadCaptureProgress) => {
+        leadCaptureResumeSignal.value = next;
+        LeadCaptureSessionService.getInstance().save(chatId, next);
+        if (next.phase === 'done') markLeadCaptureCompleted();
     };
 
-    if (progress.phase === 'intro') {
+    /**
+     * Entrar en el guion. Desde la tarjeta de oferta se salta el intro: el
+     * visitante ya ha leído de qué va al pulsar.
+     */
+    const startOrResume = () => {
+        markLeadCaptureEngaged();
+        if (current.phase === 'intro') {
+            advance({
+                phase: 'steps',
+                stepId: flow.startStepId,
+                answers: [],
+                trail: [],
+            });
+        }
+    };
+
+    if (mode === 'offer') {
+        return (
+            <OfferCard
+                intro={flow.intro}
+                resuming={current.phase !== 'intro'}
+                cardStyle={cardStyle}
+                centeredText={centeredText}
+                onStart={startOrResume}
+            />
+        );
+    }
+
+    /**
+     * Vuelve al paso anterior. Lo contestado desde ese punto se descarta: si el
+     * visitante cambia de rama, las respuestas de la rama abandonada no pueden
+     * acabar en el lead.
+     */
+    const goBack =
+        trail.length === 0
+            ? undefined
+            : () => {
+                  const previousTrail = trail.slice(0, -1);
+                  advance({
+                      phase: 'steps',
+                      stepId: trail[trail.length - 1],
+                      answers: current.answers.filter((answer) =>
+                          previousTrail.includes(answer.stepId)
+                      ),
+                      trail: previousTrail,
+                  });
+              };
+
+    if (current.phase === 'intro') {
         return (
             <div class="guiders-lead-capture" style={cardStyle}>
                 <p style={{ ...titleStyle, ...centeredText }}>{flow.intro.title}</p>
                 <p style={{ ...introBodyStyle, ...centeredText }}>{flow.intro.body}</p>
                 <div style={actionsRowStyle}>
-                    <button
-                        type="button"
-                        style={buttonStyle}
-                        onClick={() => {
-                            leadCaptureStartedSignal.value = true;
-                            advance({
-                                phase: 'steps',
-                                stepId: flow.startStepId,
-                                answers: [],
-                            });
-                        }}
-                    >
+                    <button type="button" style={buttonStyle} onClick={startOrResume}>
                         {flow.intro.ctaLabel}
                     </button>
                 </div>
@@ -141,18 +181,25 @@ export function LeadCaptureWizard({ centered = false }: { centered?: boolean } =
         );
     }
 
-    if (progress.phase === 'steps') {
-        const step = flow.steps.find((candidate) => candidate.id === progress.stepId);
+    // El paso de datos cuenta como uno más: así el contador nunca promete menos
+    // trabajo del que queda.
+    const finalStepPosition = trail.length + 1;
+
+    if (current.phase === 'steps') {
+        const step = flow.steps.find((candidate) => candidate.id === current.stepId);
         // Un paso que no existe deja el guion sin salida, así que se cierra pidiendo los datos.
         if (!step) {
             return (
                 <FinalStep
-                    answers={progress.answers}
+                    answers={current.answers}
                     legal={resolved?.legal}
                     flowId={flow.id}
                     chatId={chatId}
                     cardStyle={cardStyle}
-                    onDone={() => advance({ ...progress, phase: 'done' })}
+                    position={finalStepPosition}
+                    total={finalStepPosition}
+                    onBack={goBack}
+                    onDone={() => advance({ ...current, phase: 'done' })}
                 />
             );
         }
@@ -160,16 +207,20 @@ export function LeadCaptureWizard({ centered = false }: { centered?: boolean } =
         return (
             <StepCard
                 step={step}
-                answers={progress.answers}
+                answers={current.answers}
                 cardStyle={cardStyle}
+                position={trail.length + 1}
+                total={trail.length + stepsAhead(flow, step.id) + 1}
+                onBack={goBack}
                 onAnswer={(answer, nextStepId) => {
                     const answers = answer
-                        ? [...progress.answers.filter((a) => a.stepId !== answer.stepId), answer]
-                        : progress.answers;
+                        ? [...current.answers.filter((a) => a.stepId !== answer.stepId), answer]
+                        : current.answers;
+                    const nextTrail = [...trail, step.id];
                     advance(
                         nextStepId
-                            ? { phase: 'steps', stepId: nextStepId, answers }
-                            : { phase: 'final', stepId: null, answers }
+                            ? { phase: 'steps', stepId: nextStepId, answers, trail: nextTrail }
+                            : { phase: 'final', stepId: null, answers, trail: nextTrail }
                     );
                 }}
             />
@@ -178,13 +229,122 @@ export function LeadCaptureWizard({ centered = false }: { centered?: boolean } =
 
     return (
         <FinalStep
-            answers={progress.answers}
+            answers={current.answers}
             legal={resolved?.legal}
             flowId={flow.id}
             chatId={chatId}
             cardStyle={cardStyle}
-            onDone={() => advance({ ...progress, phase: 'done' })}
+            position={finalStepPosition}
+            total={finalStepPosition}
+            onBack={goBack}
+            onDone={() => advance({ ...current, phase: 'done' })}
         />
+    );
+}
+
+/**
+ * Pasos que quedan como máximo desde aquí. El guion ramifica, así que se toma
+ * la rama más larga: el contador puede acortarse al elegir, nunca alargarse.
+ */
+function stepsAhead(
+    flow: LeadCaptureFlowData,
+    stepId: string | null | undefined,
+    visited: Set<string> = new Set()
+): number {
+    if (!stepId || visited.has(stepId)) return 0;
+    const step = flow.steps.find((candidate) => candidate.id === stepId);
+    if (!step) return 0;
+
+    const nextVisited = new Set(visited).add(stepId);
+    const exits =
+        step.type === 'choice'
+            ? (step.options ?? []).map((option) => option.next)
+            : [step.next];
+    const deepest = exits.reduce(
+        (max, next) => Math.max(max, stepsAhead(flow, next, nextVisited)),
+        0
+    );
+    return 1 + deepest;
+}
+
+/**
+ * Tarjeta al final del hilo: el asistente se ofrece sin tapar la conversación
+ * ni bloquear el composer. Es también la vía para retomar lo que quedó a medias.
+ */
+function OfferCard({
+    intro,
+    resuming,
+    cardStyle,
+    centeredText,
+    onStart,
+}: {
+    intro: LeadCaptureFlowData['intro'];
+    resuming: boolean;
+    cardStyle: typeof wizardCardStyle;
+    centeredText: { textAlign?: 'center' };
+    onStart: () => void;
+}) {
+    return (
+        <div class="guiders-lead-capture" style={cardStyle}>
+            <p style={{ ...titleStyle, ...centeredText }}>
+                {resuming ? 'Tienes una solicitud a medias' : intro.title}
+            </p>
+            <p style={{ ...introBodyStyle, ...centeredText }}>
+                {resuming
+                    ? 'Sigue donde lo dejaste y te contactamos con una propuesta.'
+                    : intro.body}
+            </p>
+            <div style={actionsRowStyle}>
+                <button type="button" style={buttonStyle} onClick={onStart}>
+                    {resuming ? 'Continuar' : intro.ctaLabel}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/** Cabecera de progreso: orienta sobre lo que falta antes de pedir los datos. */
+function StepProgress({ position, total }: { position: number; total: number }) {
+    const percent = Math.min(100, Math.round((position / Math.max(total, 1)) * 100));
+    return (
+        <div style={stepHeaderStyle}>
+            <span style={stepCounterStyle}>
+                Paso {position} de {total}
+            </span>
+            <div
+                class="guiders-lc-progress-track"
+                role="progressbar"
+                aria-label="Progreso del asistente"
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={position}
+            >
+                <div class="guiders-lc-progress-fill" style={{ width: `${percent}%` }} />
+            </div>
+        </div>
+    );
+}
+
+/** Vuelta al paso anterior; se oculta en el primero, donde no hay dónde volver. */
+function BackButton({ onBack }: { onBack?: () => void }) {
+    if (!onBack) return null;
+    return (
+        <div style={backRowStyle}>
+            <button type="button" class="guiders-lc-back" onClick={onBack}>
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    width="12"
+                    height="12"
+                    aria-hidden="true"
+                >
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Atrás
+            </button>
+        </div>
     );
 }
 
@@ -207,12 +367,23 @@ function ThanksCard({ centered = false }: { centered?: boolean }) {
 
 function AnswersRecap({ answers }: { answers: LeadCaptureAnswer[] }) {
     if (answers.length === 0) return null;
+    // Solo las últimas: con el guion avanzado el resumen taparía la pregunta.
+    const visible = answers.slice(-RECAP_VISIBLE);
+    const hidden = answers.length - visible.length;
     return (
         <div style={recapListStyle}>
-            {answers.map((answer) => (
+            {hidden > 0 && (
+                <p style={recapMoreStyle}>
+                    +{hidden} {hidden === 1 ? 'respuesta' : 'respuestas'} antes
+                </p>
+            )}
+            {visible.map((answer) => (
                 <p key={answer.stepId} style={recapItemStyle}>
-                    {answer.prompt}{' '}
-                    <span style={recapAnswerStyle}>{answer.answer}</span>
+                    <span style={recapCheckStyle} aria-hidden="true">✓</span>
+                    <span>
+                        {answer.prompt}{' '}
+                        <span style={recapAnswerStyle}>{answer.answer}</span>
+                    </span>
                 </p>
             ))}
         </div>
@@ -223,68 +394,137 @@ function StepCard({
     step,
     answers,
     cardStyle,
+    position,
+    total,
+    onBack,
     onAnswer,
 }: {
     step: LeadCaptureStep;
     answers: LeadCaptureAnswer[];
     cardStyle: typeof wizardCardStyle;
+    position: number;
+    total: number;
+    onBack?: () => void;
     onAnswer: (answer: LeadCaptureAnswer | null, nextStepId: string | null) => void;
 }) {
     const [value, setValue] = useState('');
     const [focused, setFocused] = useState(false);
     const [error, setError] = useState('');
+    const [chosenOptionId, setChosenOptionId] = useState<string | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const feedbackTimer = useRef<number | null>(null);
 
     // Cada paso empieza con el campo limpio aunque se reutilice el componente.
     useEffect(() => {
         setValue('');
         setError('');
+        setChosenOptionId(null);
     }, [step.id]);
+
+    // El teclado solo se abre solo en pantalla grande: en móvil taparía la
+    // pregunta que el visitante acaba de recibir.
+    useEffect(() => {
+        if (step.type !== 'text') return;
+        if (!isVisibleSignal.peek()) return;
+        if (window.innerWidth < AUTOFOCUS_MIN_WIDTH_PX) return;
+        inputRef.current?.focus();
+    }, [step.id, step.type]);
+
+    useEffect(
+        () => () => {
+            if (feedbackTimer.current !== null) {
+                window.clearTimeout(feedbackTimer.current);
+            }
+        },
+        []
+    );
+
+    const header = (
+        <>
+            <StepProgress position={position} total={total} />
+            <AnswersRecap answers={answers} />
+        </>
+    );
 
     if (step.type === 'message') {
         return (
             <div class="guiders-lead-capture" style={cardStyle}>
-                <AnswersRecap answers={answers} />
-                <p style={promptStyle}>{step.prompt}</p>
-                <div style={actionsRowStyle}>
-                    <button
-                        type="button"
-                        style={buttonStyle}
-                        onClick={() => onAnswer(null, step.next ?? null)}
-                    >
-                        Continuar
-                    </button>
+                {header}
+                <div class="guiders-lc-step" key={step.id}>
+                    <p style={promptStyle}>{step.prompt}</p>
+                    <div style={actionsRowStyle}>
+                        <button
+                            type="button"
+                            style={buttonStyle}
+                            onClick={() => onAnswer(null, step.next ?? null)}
+                        >
+                            Continuar
+                        </button>
+                    </div>
                 </div>
+                <BackButton onBack={onBack} />
             </div>
         );
     }
 
     if (step.type === 'choice') {
+        /** La opción elegida se marca un instante antes de avanzar. */
+        const choose = (optionId: string, answer: LeadCaptureAnswer, next: string | null) => {
+            if (chosenOptionId) return;
+            setChosenOptionId(optionId);
+            feedbackTimer.current = window.setTimeout(
+                () => onAnswer(answer, next),
+                OPTION_FEEDBACK_MS
+            );
+        };
+
         return (
             <div class="guiders-lead-capture" style={cardStyle}>
-                <AnswersRecap answers={answers} />
-                <p style={promptStyle}>{step.prompt}</p>
-                <div style={optionsColumnStyle}>
-                    {(step.options ?? []).map((option) => (
-                        <button
-                            key={option.id}
-                            type="button"
-                            style={optionButtonStyle}
-                            onClick={() =>
-                                onAnswer(
-                                    {
-                                        stepId: step.id,
-                                        prompt: step.prompt,
-                                        answer: option.label,
-                                        field: step.field,
-                                    },
-                                    option.next ?? null
-                                )
-                            }
-                        >
-                            {option.label}
-                        </button>
-                    ))}
+                {header}
+                <div class="guiders-lc-step" key={step.id}>
+                    <p style={promptStyle}>{step.prompt}</p>
+                    <div style={optionsColumnStyle}>
+                        {(step.options ?? []).map((option) => (
+                            <button
+                                key={option.id}
+                                type="button"
+                                class={`guiders-lc-option${
+                                    chosenOptionId === option.id
+                                        ? ' guiders-lc-option--chosen'
+                                        : ''
+                                }`}
+                                disabled={!!chosenOptionId}
+                                onClick={() =>
+                                    choose(
+                                        option.id,
+                                        {
+                                            stepId: step.id,
+                                            prompt: step.prompt,
+                                            answer: option.label,
+                                            field: step.field,
+                                        },
+                                        option.next ?? null
+                                    )
+                                }
+                            >
+                                <span>{option.label}</span>
+                                <svg
+                                    class="guiders-lc-option-arrow"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    width="14"
+                                    height="14"
+                                    aria-hidden="true"
+                                >
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                            </button>
+                        ))}
+                    </div>
                 </div>
+                <BackButton onBack={onBack} />
             </div>
         );
     }
@@ -313,31 +553,35 @@ function StepCard({
     const optional = step.required === false;
     return (
         <form class="guiders-lead-capture" style={cardStyle} onSubmit={submit} noValidate>
-            <AnswersRecap answers={answers} />
-            <p style={promptStyle}>{step.prompt}</p>
-            <label style={fieldStyle}>
-                <span style={optional ? optionalLabelStyle : requiredLabelStyle}>
-                    {optional ? 'Tu respuesta (opcional)' : 'Tu respuesta'}
-                </span>
-                <input
-                    type={step.validation === 'email' ? 'email' : step.validation === 'phone' ? 'tel' : 'text'}
-                    value={value}
-                    autocomplete="off"
-                    style={resolveInputStyle({ focused, invalid: !!error })}
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
-                    onInput={(event) => {
-                        setValue((event.target as HTMLInputElement).value);
-                        setError('');
-                    }}
-                />
-                {error && <p style={fieldErrorStyle}>{error}</p>}
-            </label>
-            <div style={actionsRowStyle}>
-                <button type="submit" style={buttonStyle}>
-                    Continuar
-                </button>
+            {header}
+            <div class="guiders-lc-step" key={step.id}>
+                <p style={promptStyle}>{step.prompt}</p>
+                <label style={fieldStyle}>
+                    <span style={optional ? optionalLabelStyle : requiredLabelStyle}>
+                        {optional ? 'Tu respuesta (opcional)' : 'Tu respuesta'}
+                    </span>
+                    <input
+                        ref={inputRef}
+                        type={step.validation === 'email' ? 'email' : step.validation === 'phone' ? 'tel' : 'text'}
+                        value={value}
+                        autocomplete="off"
+                        style={resolveInputStyle({ focused, invalid: !!error })}
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
+                        onInput={(event) => {
+                            setValue((event.target as HTMLInputElement).value);
+                            setError('');
+                        }}
+                    />
+                    {error && <p style={fieldErrorStyle}>{error}</p>}
+                </label>
+                <div style={actionsRowStyle}>
+                    <button type="submit" style={buttonStyle}>
+                        Continuar
+                    </button>
+                </div>
             </div>
+            <BackButton onBack={onBack} />
         </form>
     );
 }
@@ -365,6 +609,9 @@ function FinalStep({
     flowId,
     chatId,
     cardStyle,
+    position,
+    total,
+    onBack,
     onDone,
 }: {
     answers: LeadCaptureAnswer[];
@@ -372,6 +619,9 @@ function FinalStep({
     flowId: string;
     chatId: string | null;
     cardStyle: typeof wizardCardStyle;
+    position: number;
+    total: number;
+    onBack?: () => void;
     onDone: () => void;
 }) {
     const prefill = prefillFromAnswers(answers);
@@ -433,7 +683,7 @@ function FinalStep({
                 acceptedMarketing,
                 answers,
             });
-            clearProgress(chatId);
+            LeadCaptureSessionService.getInstance().clear(chatId);
             // El resumen queda en el hilo, así que el estado sobrevive a un recargo.
             if (message?.id) {
                 messagesSignal.value = [
@@ -457,6 +707,7 @@ function FinalStep({
 
     return (
         <form class="guiders-lead-capture" style={cardStyle} onSubmit={submit} noValidate>
+            <StepProgress position={position} total={total} />
             <AnswersRecap answers={answers} />
             <p style={titleStyle}>Último paso: ¿dónde te respondemos?</p>
             <p style={subtitleStyle}>
@@ -561,6 +812,7 @@ function FinalStep({
             <p style={progressStyle}>
                 Tus respuestas se guardan junto a tus datos de contacto.
             </p>
+            <BackButton onBack={onBack} />
         </form>
     );
 }
@@ -649,37 +901,4 @@ function prefillFromAnswers(
         }
     });
     return prefill;
-}
-
-function storageKey(chatId: string): string {
-    return `${STORAGE_PREFIX}${chatId}`;
-}
-
-function readProgress(chatId: string): WizardProgress | null {
-    try {
-        const raw = sessionStorage?.getItem(storageKey(chatId));
-        if (!raw) return null;
-        const parsed = JSON.parse(raw) as WizardProgress;
-        if (!parsed?.phase) return null;
-        return { ...INITIAL_PROGRESS, ...parsed };
-    } catch {
-        return null;
-    }
-}
-
-function writeProgress(chatId: string | null, progress: WizardProgress): void {
-    if (!chatId) return;
-    try {
-        sessionStorage?.setItem(storageKey(chatId), JSON.stringify(progress));
-    } catch {
-        /* el asistente sigue funcionando sin persistencia */
-    }
-}
-
-function clearProgress(chatId: string): void {
-    try {
-        sessionStorage?.removeItem(storageKey(chatId));
-    } catch {
-        /* nada que limpiar */
-    }
 }

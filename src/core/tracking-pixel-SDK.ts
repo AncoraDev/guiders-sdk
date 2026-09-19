@@ -189,6 +189,8 @@ export class TrackingPixelSDK {
 	private consentBackendService: ConsentBackendService;
 	// consentBanner removed — mounted via ChatUIBridge.showConsentBanner
 	private commercialAvailabilityService: CommercialAvailabilityService | null = null;
+	/** Guion de captación en curso de resolver; una sola petición por carga. */
+	private leadCaptureFlowReady: Promise<boolean> | null = null;
 	private commercialAvailabilityConfig?: Partial<CommercialAvailabilityConfig>;
 	private presenceConfig: {
 		enabled: boolean;
@@ -601,9 +603,11 @@ export class TrackingPixelSDK {
 				chat.initToggleButton();
 				chat.hideToggleButton();
 
-				// Fuera de horario es justo cuando interesa captar: si la empresa
-				// tiene guion, el botón se mantiene visible con el asistente.
-				void this.activateLeadCaptureIfConfigured(chat).then((hasFlow) => {
+				// Fuera de horario no hay a quién esperar, así que cuenta como
+				// "sin soporte" sin consultar la disponibilidad. Es justo cuando
+				// interesa captar: con guion el botón se mantiene visible.
+				chat.setSupportOnline?.(false);
+				void this.resolveLeadCaptureFlowOnce(chat).then((hasFlow) => {
 					if (hasFlow) {
 						chat.showToggleButton();
 					}
@@ -657,6 +661,10 @@ export class TrackingPixelSDK {
 			});
 
 			debugLog("Componentes del chat inicializados. Chat oculto por defecto.");
+
+			// El guion se resuelve siempre, haya o no servicio de disponibilidad:
+			// es lo único que decide si el asistente puede aparecer.
+			void this.resolveLeadCaptureFlowOnce(chat);
 
 			// Inicializar servicio de disponibilidad de comerciales (API v2)
 			// Este servicio hace polling y actualiza la visibilidad del chat automáticamente
@@ -2125,10 +2133,24 @@ export class TrackingPixelSDK {
 	}
 
 	/**
-	 * Resuelve el guion de captación y lo ofrece en el hilo. Devuelve si hay
-	 * guion, para que quien llama decida qué hacer con el botón del chat.
+	 * Resolución del guion compartida por la inicialización y la disponibilidad:
+	 * el primero que llegue la arranca y el otro espera el mismo resultado.
 	 */
-	private async activateLeadCaptureIfConfigured(chat: ChatUI): Promise<boolean> {
+	private resolveLeadCaptureFlowOnce(chat: ChatUI): Promise<boolean> {
+		if (!this.leadCaptureFlowReady) {
+			this.leadCaptureFlowReady = this.resolveLeadCaptureFlow(chat);
+		}
+		return this.leadCaptureFlowReady;
+	}
+
+	/**
+	 * Resuelve el guion de captación del sitio y se lo pasa al chat. Se llama al
+	 * inicializar, sin depender de la disponibilidad de comerciales: quién manda
+	 * sobre el asistente es `leadCaptureModeSignal`, y sin guion no hay nada que
+	 * decidir. Devuelve si hay guion, para que quien llama decida qué hacer con
+	 * el botón del chat.
+	 */
+	private async resolveLeadCaptureFlow(chat: ChatUI): Promise<boolean> {
 		try {
 			const service = LeadCaptureFlowService.getInstance();
 			service.configure({
@@ -2138,18 +2160,37 @@ export class TrackingPixelSDK {
 			});
 
 			const resolved = await service.resolve();
-			if (!resolved.flow) {
-				chat.setLeadCaptureFlow?.(null);
-				return false;
-			}
-
-			chat.setLeadCaptureFlow?.(resolved);
-			chat.setLeadCaptureActive?.(true);
-			return true;
+			chat.setLeadCaptureFlow?.(resolved.flow ? resolved : null);
+			return !!resolved.flow;
 		} catch (error) {
-			debugLog('📝 [LeadCapture] No se pudo activar el asistente:', error);
+			debugLog('📝 [LeadCapture] No se pudo resolver el guion:', error);
 			return false;
 		}
+	}
+
+	private createAvailabilityService(): CommercialAvailabilityService {
+		return new CommercialAvailabilityService({
+			domain: window.location.hostname,
+			apiKey: this.apiKey,
+			apiBaseUrl: this.endpoint,
+			debug: this.commercialAvailabilityConfig?.debug || false,
+			// tenantId may already be stored from a previous identify/session
+			tenantId: localStorage.getItem('tenantId') || undefined,
+		});
+	}
+
+	/**
+	 * Consulta la disponibilidad una sola vez para los sitios que no tienen la
+	 * feature activada pero sí guion de captación. Sin respuesta el soporte se
+	 * queda como desconocido y el chat se comporta igual que siempre.
+	 */
+	private async reportSupportForLeadCapture(chat: ChatUI): Promise<void> {
+		const hasFlow = await this.resolveLeadCaptureFlowOnce(chat);
+		if (!hasFlow) return;
+
+		const result = await this.createAvailabilityService().checkAvailability();
+		if (!result) return;
+		chat.setSupportOnline?.(result.available && result.onlineCount >= 1);
 	}
 
 	/**
@@ -2159,22 +2200,15 @@ export class TrackingPixelSDK {
 	private initializeCommercialAvailability(chat: ChatUI): void {
 		// Solo inicializar si la configuración está habilitada
 		if (!this.commercialAvailabilityConfig?.enabled) {
-			// El código llamador se encargará de mostrar el botón si es necesario
+			// El código llamador se encargará de mostrar el botón si es necesario.
+			// Sin la feature nadie informa del soporte, y el asistente de captación
+			// necesita saberlo: se consulta una vez, sin tocar la visibilidad.
+			void this.reportSupportForLeadCapture(chat);
 			return;
 		}
 
-		const domain = window.location.hostname;
-		// tenantId may already be stored from a previous identify/session
-		const storedTenantId = localStorage.getItem('tenantId') || undefined;
-
 		// Create availability service (REST + WebSocket, no polling)
-		this.commercialAvailabilityService = new CommercialAvailabilityService({
-			domain,
-			apiKey: this.apiKey,
-			apiBaseUrl: this.endpoint,
-			debug: this.commercialAvailabilityConfig.debug || false,
-			tenantId: storedTenantId
-		});
+		this.commercialAvailabilityService = this.createAvailabilityService();
 
 		// Register callback for availability changes
 		// hideWhenUnavailable (default true): oculta el widget si no hay soporte.
@@ -2189,6 +2223,10 @@ export class TrackingPixelSDK {
 			const presenceSvc = this.presenceManager?.getService();
 			// Limpiar avisos de disponibilidad del hilo (evitan confusión con la cabecera)
 			chat.clearAvailabilitySystemMessages();
+			// El asistente no se activa ni se retira aquí: solo se le cuenta cómo
+			// está el soporte y él decide (ver `leadCaptureModeSignal`).
+			chat.setSupportOnline?.(available && count >= 1);
+
 			if (available && count >= 1) {
 				presenceSvc?.applyCommercialStatus?.('online');
 				chat.setOnlineCommercialCount?.(count);
@@ -2196,31 +2234,22 @@ export class TrackingPixelSDK {
 				if (this.commercialAvailabilityConfig?.showBadge) {
 					chat.updateUnreadCount(count);
 				}
-				// Hay alguien atendiendo: el asistente deja de ofrecerse, salvo que
-				// el visitante ya lo haya empezado.
-				chat.setLeadCaptureActive?.(false);
 			} else {
 				presenceSvc?.applyCommercialStatus?.('offline');
 				chat.setOnlineCommercialCount?.(0);
 				chat.hideUnreadBadge();
-				// Sin nadie conectado es cuando más interesa captar: si la empresa
-				// tiene guion, el widget se mantiene visible con el asistente.
-				void this.activateLeadCaptureIfConfigured(chat).then((hasFlow) => {
-					if (hasFlow) {
+				// Sin nadie conectado es cuando más interesa captar: con guion el
+				// widget se mantiene visible aunque se pidiera ocultarlo.
+				void this.resolveLeadCaptureFlowOnce(chat).then((hasFlow) => {
+					if (hasFlow || !hideWhenUnavailable) {
 						chat.showToggleButton();
 						return;
 					}
-					if (hideWhenUnavailable) {
-						debugLog(
-							'📡 [CommercialAvailability] Sin soporte — ocultando chat'
-						);
-						if (chat.isVisible()) {
-							chat.hide();
-						}
-						chat.hideToggleButton();
-					} else {
-						chat.showToggleButton();
+					debugLog('📡 [CommercialAvailability] Sin soporte — ocultando chat');
+					if (chat.isVisible()) {
+						chat.hide();
 					}
+					chat.hideToggleButton();
 				});
 			}
 		});
@@ -3124,6 +3153,10 @@ export class TrackingPixelSDK {
 			chat.hide();
 			
 			chat.initToggleButton();
+
+			// Mismo criterio que en la inicialización completa: el guion se
+			// resuelve aparte y la disponibilidad solo informa del soporte.
+			void this.resolveLeadCaptureFlowOnce(chat);
 
 			// Inicializar servicio de disponibilidad de comerciales (API v2)
 			this.initializeCommercialAvailability(chat);

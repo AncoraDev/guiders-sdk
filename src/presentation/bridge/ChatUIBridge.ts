@@ -5,6 +5,7 @@ import { PresenceService } from '../../services/presence-service';
 import type { PresenceLike } from '../types/presence-types';
 import { AssignedCommercialInfo, ChatStatus } from '../../types/websocket-types';
 import { fetchChatDetail } from '../../services/chat-detail-service';
+import { LeadCaptureSessionService } from '../../services/lead-capture-session-service';
 import { ChatV2, ResolvedLeadCaptureFlow } from '../../types';
 import { debugLog, debugWarn, debugError } from '../../utils/debug-logger';
 import {
@@ -30,10 +31,10 @@ import {
     chatInitializedSignal,
     chatSelectorEnabledSignal,
     leadCaptureFlowSignal,
-    leadCaptureActiveSignal,
-    leadCaptureStartedSignal,
-    markLeadCaptureVisitorWrote,
-    hydrateLeadCaptureVisitorWrote,
+    leadCaptureOwnsThreadSignal,
+    supportOnlineSignal,
+    resetLeadCaptureForChat,
+    hydrateLeadCaptureStatus,
 } from '../signals';
 import { messagesSignal, sendMessageCallbackSignal, loadChatTriggerSignal, loadedChatIdSignal } from '../signals/messagesState';
 import {
@@ -335,6 +336,13 @@ export class ChatUIBridge {
                 return;
             }
 
+            // Con el asistente de captación ocupando el hilo no hay nadie al otro
+            // lado: el mensaje se perdería en un chat que nadie atiende.
+            if (leadCaptureOwnsThreadSignal.peek()) {
+                debugWarn('[ChatUIBridge] onSubmit ignorado: el asistente de captación ocupa el hilo');
+                return;
+            }
+
             // ── Optimistic append ─────────────────────────────────────────────
             const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             const optimisticMsg = {
@@ -343,8 +351,6 @@ export class ChatUIBridge {
                 timestamp: Date.now(),
                 id: optimisticId,
             } satisfies ChatMessageParams & { id: string };
-            // Si prefiere escribir, el asistente deja de ocupar el hilo.
-            markLeadCaptureVisitorWrote(chatIdSignal.peek());
             this.appendMessage(optimisticMsg);
 
             // ── Invoke SDK callback ───────────────────────────────────────────
@@ -570,7 +576,11 @@ export class ChatUIBridge {
         }
         if (chatId === loadedChatIdSignal.value && !force) return;
         chatIdSignal.value = chatId;
-        hydrateLeadCaptureVisitorWrote(chatId);
+        // Otro chat, otra captación. Hasta que se sepa si había algo a medias el
+        // asistente no decide nada: si no, un recargo a mitad del guion lo haría
+        // desaparecer y el progreso quedaría huérfano.
+        resetLeadCaptureForChat();
+        void this.hydrateLeadCapture(chatId);
         // Increment trigger — usePagination hook will pick this up and load messages
         loadChatTriggerSignal.value = (loadChatTriggerSignal.value || 0) + 1;
         // Always refresh chat details so avatar, name and presence status reflect
@@ -578,6 +588,22 @@ export class ChatUIBridge {
         this.refreshChatDetails(force).catch((err) => {
             debugError('[ChatUIBridge] initializeChat: refreshChatDetails failed:', err);
         });
+    }
+
+    /**
+     * Recupera la captación a medias de este chat. Un fallo se trata como "no
+     * había nada": es preferible repetir el guion que dejarlo bloqueado.
+     */
+    private async hydrateLeadCapture(chatId: string): Promise<void> {
+        try {
+            const session = await LeadCaptureSessionService.getInstance().load(chatId);
+            // El visitante pudo cambiar de chat mientras se consultaba.
+            if (chatIdSignal.peek() !== chatId) return;
+            hydrateLeadCaptureStatus(session.status, session.progress);
+        } catch (err) {
+            debugError('[ChatUIBridge] hydrateLeadCapture falló:', err);
+            if (chatIdSignal.peek() === chatId) hydrateLeadCaptureStatus('none');
+        }
     }
 
     /**
@@ -933,13 +959,12 @@ export class ChatUIBridge {
     }
 
     /**
-     * Ofrece o retira el asistente de captación. Si el visitante ya lo empezó no
-     * se le quita de debajo aunque se conecte un comercial.
+     * Disponibilidad del tenant. `null` es "todavía no lo sé", que no es lo
+     * mismo que no haber nadie: decide si el asistente se ofrece, ocupa el hilo
+     * o no aparece (ver `leadCaptureModeSignal`).
      */
-    setLeadCaptureActive(active: boolean): void {
-        if (!active && leadCaptureStartedSignal.value) return;
-        if (active && !leadCaptureFlowSignal.value) return;
-        leadCaptureActiveSignal.value = active;
+    setSupportOnline(online: boolean | null): void {
+        supportOnlineSignal.value = online;
     }
     hideUnreadBadge(): void { this.toggleBridge.hideUnreadBadge(); }
     onToggle(callback: (visible: boolean) => void): void { this.toggleBridge.onToggle(callback); }

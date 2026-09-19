@@ -51,12 +51,21 @@ export type { SendMessageCallback } from './messagesState';
 // --- leadCaptureState ---
 export {
     leadCaptureFlowSignal,
-    leadCaptureActiveSignal,
-    leadCaptureStartedSignal,
-    leadCaptureVisitorWroteSignal,
-    markLeadCaptureVisitorWrote,
-    hydrateLeadCaptureVisitorWrote,
+    leadCaptureStatusSignal,
+    leadCaptureEngagedSignal,
+    supportOnlineSignal,
+    leadCaptureHydratedSignal,
+    leadCaptureResumeSignal,
+    leadCaptureCompletedSignal,
+    hasThreadHistorySignal,
+    leadCaptureModeSignal,
+    leadCaptureOwnsThreadSignal,
+    resetLeadCaptureForChat,
+    hydrateLeadCaptureStatus,
+    markLeadCaptureEngaged,
+    markLeadCaptureCompleted,
 } from './leadCaptureState';
+export type { LeadCaptureMode } from './leadCaptureState';
 
 // --- presenceState ---
 export { presenceServiceSignal, commercialPresenceMapSignal } from './presenceState';

@@ -7,12 +7,14 @@ import {
     presenceStatusSignal,
 } from '../../signals/chatState';
 import { sendMessageCallbackSignal } from '../../signals/messagesState';
+import { leadCaptureOwnsThreadSignal } from '../../signals/leadCaptureState';
 import { useTypingIndicator } from '../../hooks/useTypingIndicator';
 import { TypingIndicator } from '../TypingIndicator';
 
 const MAX_TEXTAREA_HEIGHT_PX = 100;
 
 const PLACEHOLDER_NO_AGENTS = 'Déjanos tu mensaje…';
+const PLACEHOLDER_LEAD_CAPTURE = 'Responde en el asistente para continuar…';
 
 // ---------------------------------------------------------------------------
 // ChatInput
@@ -33,7 +35,14 @@ export function ChatInput() {
     const chatId = chatIdSignal.value;
     const defaultPlaceholder = chatInputPlaceholderSignal.value;
     const noAgents = presenceStatusSignal.value === 'offline';
-    const placeholder = noAgents ? PLACEHOLDER_NO_AGENTS : defaultPlaceholder;
+    // Con el asistente ocupando el hilo la única vía es el guion: escribir aquí
+    // mandaría el mensaje a un chat que nadie está atendiendo.
+    const locked = leadCaptureOwnsThreadSignal.value;
+    const placeholder = locked
+        ? PLACEHOLDER_LEAD_CAPTURE
+        : noAgents
+            ? PLACEHOLDER_NO_AGENTS
+            : defaultPlaceholder;
 
     const [hasContent, setHasContent] = useState(false);
 
@@ -59,9 +68,21 @@ export function ChatInput() {
         };
     }, []);
 
+    // Si el asistente toma el hilo a media redacción, el borrador se descarta:
+    // quedaría un texto que ya no se puede enviar.
+    useEffect(() => {
+        if (!locked) return;
+        const el = textareaRef.current;
+        if (el) {
+            el.value = '';
+            el.style.height = 'auto';
+        }
+        setHasContent(false);
+    }, [locked]);
+
     const handleInput = () => {
         const el = textareaRef.current;
-        if (!el) return;
+        if (!el || locked) return;
         el.style.height = 'auto';
         el.style.height = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT_PX) + 'px';
         setHasContent(el.value.trim().length > 0);
@@ -70,7 +91,7 @@ export function ChatInput() {
 
     const handleSend = () => {
         const el = textareaRef.current;
-        if (!el) return;
+        if (!el || locked) return;
         const message = el.value.trim();
         if (!message) return;
 
@@ -82,6 +103,7 @@ export function ChatInput() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+        if (locked) return;
         if (e.isComposing || (e as KeyboardEvent & { keyCode: number }).keyCode === 229) return;
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -96,7 +118,7 @@ export function ChatInput() {
                 authorName={chatDetailSignal.value?.assignedCommercial?.name}
             />
             <div
-                class={`chat-input-container${hasContent ? ' chat-input-container--ready' : ''}`}
+                class={`chat-input-container${hasContent ? ' chat-input-container--ready' : ''}${locked ? ' chat-input-container--locked' : ''}`}
                 ref={composerRef}
             >
                 <div class="chat-input-inner">
@@ -106,16 +128,19 @@ export function ChatInput() {
                             class="chat-input-field"
                             placeholder={placeholder}
                             rows={1}
+                            disabled={locked}
                             onInput={handleInput}
                             onKeyDown={handleKeyDown}
                             aria-label="Mensaje"
+                            title={locked ? PLACEHOLDER_LEAD_CAPTURE : undefined}
                         />
                         <button
-                            class={`chat-send-btn${hasContent ? ' chat-send-btn--active' : ''}`}
+                            class={`chat-send-btn${hasContent && !locked ? ' chat-send-btn--active' : ''}`}
                             type="button"
                             aria-label="Enviar mensaje"
-                            aria-disabled={hasContent ? undefined : 'true'}
-                            onClick={hasContent ? handleSend : undefined}
+                            disabled={locked}
+                            aria-disabled={hasContent && !locked ? undefined : 'true'}
+                            onClick={hasContent && !locked ? handleSend : undefined}
                         >
                             <svg
                                 viewBox="0 0 24 24"

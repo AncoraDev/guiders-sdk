@@ -7,11 +7,7 @@ import {
     isPaginatingSignal,
     chatDetailSignal,
 } from '../../signals';
-import {
-    leadCaptureActiveSignal,
-    leadCaptureFlowSignal,
-    leadCaptureVisitorWroteSignal,
-} from '../../signals/leadCaptureState';
+import { leadCaptureModeSignal } from '../../signals/leadCaptureState';
 import { ChatMessageParams } from '../../types/chat-types';
 import { useScrollToBottom } from '../../hooks';
 import { usePagination } from '../../hooks/usePagination';
@@ -374,15 +370,10 @@ export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
         return () => observer.disconnect();
     }, [loadOlderMessages, hasMore]);
 
-    // Sin nadie atendiendo el asistente ocupa el hilo entero: no tiene sentido
-    // enseñar la conversación anterior si ahora no hay quien la continúe. En
-    // cuanto el visitante escribe, vuelve su hilo normal con el historial.
-    const wizardOwnsThread =
-        !!leadCaptureFlowSignal.value?.flow &&
-        leadCaptureActiveSignal.value &&
-        !leadCaptureVisitorWroteSignal.value;
-
-    if (wizardOwnsThread) {
+    // Modo `thread`: sin nadie atendiendo y sin conversación que tapar, el
+    // asistente es la única vía y ocupa el hilo entero. En modo `offer` el hilo
+    // se pinta normal y el asistente se ofrece como última tarjeta.
+    if (leadCaptureModeSignal.value === 'thread') {
         return (
             <div class="chat-messages" ref={containerRef} style={centeredThreadStyle}>
                 <div style={centeredThreadInnerStyle}>
@@ -419,7 +410,7 @@ export function ChatMessages({ welcomeMessage }: ChatMessagesProps) {
                 ? <ChatEmptyState body={welcomeMessage} />
                 : renderMessagesWithDateSeparators(messages)}
 
-            {/* Asistente de captación: solo se pinta si hay guion y nadie atendiendo */}
+            {/* Asistente de captación: tarjeta de oferta o cierre según el modo */}
             <LeadCaptureWizard />
         </div>
     );
