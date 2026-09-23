@@ -379,12 +379,12 @@ export function ThanksCard({
         >
             <span style={doneCheckStyle} aria-hidden="true">✓</span>
             <p style={titleStyle}>
-                {withoutContact ? 'Listo, gracias' : 'Ya está, tenemos tus datos'}
+                {withoutContact ? 'Listo, gracias' : 'Muchas gracias.'}
             </p>
             <p style={doneHintStyle}>
                 {withoutContact
                     ? 'Cuando haya un asesor disponible podrás seguir la conversación. No hemos pedido tus datos.'
-                    : 'Un asesor revisará lo que nos has contado y te escribirá el próximo día laborable con una respuesta concreta.'}
+                    : 'En breve una persona del equipo se pondrá en contacto contigo ;)'}
             </p>
         </div>
     );

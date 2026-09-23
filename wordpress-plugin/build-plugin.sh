@@ -48,6 +48,14 @@ fi
 echo "📋 Copiando SDK al plugin..."
 cp dist/index.js wordpress-plugin/guiders-wp-plugin/assets/js/guiders-sdk.min.js
 
+MIN_JS="wordpress-plugin/guiders-wp-plugin/assets/js/guiders-sdk.min.js"
+if grep -q 'webpack-dev-server\|webpackHotUpdate\|webpack/hot' "$MIN_JS"; then
+    echo "❌ ERROR: $MIN_JS es un bundle de webpack-dev-server (HMR)."
+    echo "   Ese cliente llama location.reload() ~cada 1s en sitios reales."
+    echo "   Para el plugin: npm run build (production), nunca el output de npm start."
+    exit 1
+fi
+
 echo "🔍 Validando JavaScript en archivos PHP..."
 if bash wordpress-plugin/validate-php-javascript.sh; then
     echo "✅ Validación exitosa"

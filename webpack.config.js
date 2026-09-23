@@ -16,15 +16,12 @@ return {
 			__SDK_VERSION__: JSON.stringify(packageJson.version),
 			__PRODUCTION__: !isDev,
 		}),
-		// In development, automatically copy the built bundle to both test
-		// environments after every compilation (mirrors the manual `cp` step).
+		// webpack serve escribe un bundle de desarrollo. Solo se copia a la
+		// demo local: NUNCA al plugin de WP. Si el HMR client llega a
+		// guiders-sdk.min.js, en producción recarga la página cada ~1s.
 		...(isDev ? [
 			new CopyPlugin({
 				patterns: [
-					{
-						from: path.resolve(__dirname, 'dist/index.js'),
-						to: path.resolve(__dirname, 'wordpress-plugin/guiders-wp-plugin/assets/js/guiders-sdk.min.js'),
-					},
 					{
 						from: path.resolve(__dirname, 'dist/index.js'),
 						to: path.resolve(__dirname, 'demo/app/guiders-sdk.js'),
@@ -70,7 +67,10 @@ return {
 		static: path.resolve(__dirname, 'demo/app'),
 		port: 8081,
 		host: '127.0.0.1',
-		hot: true,
+		// El entry es una librería UMD: HMR/liveReload inyectan un cliente
+		// con location.reload() cada ~1s si no hay webpack-dev-server.
+		hot: false,
+		liveReload: false,
 		allowedHosts: 'all',
 		headers: {
 			'Access-Control-Allow-Origin': '*',
