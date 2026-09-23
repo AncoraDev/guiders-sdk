@@ -49,6 +49,7 @@ export interface ContactRequestPayload {
 	email?: string;
 	telefono?: string;
 	poblacion?: string;
+	comentarios?: string;
 }
 
 export interface ContactFormLegalSnapshot {
@@ -146,12 +147,10 @@ export interface LeadCaptureSession {
 export interface LeadCaptureSubmission {
 	flowId?: string;
 	nombre: string;
-	apellidos?: string;
-	email?: string;
-	telefono?: string;
-	poblacion?: string;
+	email: string;
+	telefono: string;
+	comentarios: string;
 	acceptedPrivacyPolicy: true;
-	acceptedMarketing?: boolean;
 	answers?: LeadCaptureAnswer[];
 }
 

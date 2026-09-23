@@ -67,6 +67,7 @@ export interface RealtimeMessage {
 			email?: string;
 			telefono?: string;
 			poblacion?: string;
+			comentarios?: string;
 		};
 	};
 	attachment?: {

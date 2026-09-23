@@ -58,9 +58,9 @@ import {
 } from './LeadCaptureWizard.styles';
 
 const DEFAULT_PRIVACY_LABEL = 'He leído y acepto la política de privacidad';
-const DEFAULT_MARKETING_LABEL = 'Acepto recibir comunicaciones';
+const COMENTARIOS_MAX = 2000;
 
-type ContactField = 'nombre' | 'apellidos' | 'email' | 'telefono' | 'poblacion';
+type ContactField = 'nombre' | 'email' | 'telefono' | 'comentarios';
 
 const INITIAL_PROGRESS: LeadCaptureProgress = {
     phase: 'intro',
@@ -651,12 +651,10 @@ function FinalStep({
 }) {
     const prefill = prefillFromAnswers(answers);
     const [nombre, setNombre] = useState(prefill.nombre ?? '');
-    const [apellidos, setApellidos] = useState(prefill.apellidos ?? '');
     const [email, setEmail] = useState(prefill.email ?? '');
     const [telefono, setTelefono] = useState(prefill.telefono ?? '');
-    const [poblacion, setPoblacion] = useState(prefill.poblacion ?? '');
+    const [comentarios, setComentarios] = useState(prefill.comentarios ?? '');
     const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-    const [acceptedMarketing, setAcceptedMarketing] = useState(false);
     const [errors, setErrors] = useState<Partial<Record<ContactField | 'privacy', string>>>({});
     const [formError, setFormError] = useState('');
     const [focused, setFocused] = useState<ContactField | null>(null);
@@ -666,16 +664,18 @@ function FinalStep({
         const next: Partial<Record<ContactField | 'privacy', string>> = {};
         const trimmedEmail = email.trim();
         const trimmedTelefono = telefono.trim();
+        const trimmedComentarios = comentarios.trim();
 
         if (!nombre.trim()) next.nombre = 'Obligatorio';
-        if (trimmedEmail && !EMAIL_RE.test(trimmedEmail)) {
-            next.email = 'Introduce un email válido.';
-        }
-        if (trimmedTelefono && !PHONE_RE.test(trimmedTelefono)) {
+        if (!trimmedEmail) next.email = 'Obligatorio';
+        else if (!EMAIL_RE.test(trimmedEmail)) next.email = 'Introduce un email válido.';
+        if (!trimmedTelefono) next.telefono = 'Obligatorio';
+        else if (!PHONE_RE.test(trimmedTelefono)) {
             next.telefono = 'Introduce un teléfono válido.';
         }
-        if (!trimmedEmail && !trimmedTelefono) {
-            next.email = 'Necesitamos un email o un teléfono.';
+        if (!trimmedComentarios) next.comentarios = 'Obligatorio';
+        else if (trimmedComentarios.length > COMENTARIOS_MAX) {
+            next.comentarios = `Máximo ${COMENTARIOS_MAX} caracteres.`;
         }
         if (!acceptedPrivacy) {
             next.privacy = 'Debes aceptar la política de privacidad';
@@ -700,12 +700,10 @@ function FinalStep({
             const message = await ChatV2Service.getInstance().submitLeadCapture(chatId, {
                 flowId,
                 nombre: nombre.trim(),
-                apellidos: apellidos.trim() || undefined,
-                email: email.trim() || undefined,
-                telefono: telefono.trim() || undefined,
-                poblacion: poblacion.trim() || undefined,
+                email: email.trim(),
+                telefono: telefono.trim(),
+                comentarios: comentarios.trim(),
                 acceptedPrivacyPolicy: true,
-                acceptedMarketing,
                 answers,
             });
             LeadCaptureSessionService.getInstance().clear(chatId);
@@ -734,10 +732,9 @@ function FinalStep({
         <form class="guiders-lead-capture" style={cardStyle} onSubmit={submit} noValidate>
             <StepProgress position={position} total={total} />
             <AnswersRecap answers={answers} />
-            <p style={titleStyle}>Último paso: ¿dónde te respondemos?</p>
+            <p style={titleStyle}>Último paso: tus datos</p>
             <p style={subtitleStyle}>
-                Con tu nombre y un email o teléfono basta. Te escribimos el próximo
-                día laborable con una propuesta hecha para tu caso.
+                Nombre, email, teléfono y comentarios. Todos obligatorios.
             </p>
 
             <ContactInput
@@ -752,18 +749,10 @@ function FinalStep({
                 onInput={setNombre}
             />
             <ContactInput
-                name="apellidos"
-                label="Apellidos"
-                value={apellidos}
-                focused={focused}
-                onFocus={setFocused}
-                onBlur={() => setFocused(null)}
-                onInput={setApellidos}
-            />
-            <ContactInput
                 name="email"
-                label="Email"
+                label="Email *"
                 type="email"
+                required
                 value={email}
                 focused={focused}
                 error={errors.email}
@@ -773,8 +762,9 @@ function FinalStep({
             />
             <ContactInput
                 name="telefono"
-                label="Teléfono"
+                label="Teléfono *"
                 type="tel"
+                required
                 value={telefono}
                 focused={focused}
                 error={errors.telefono}
@@ -783,13 +773,16 @@ function FinalStep({
                 onInput={setTelefono}
             />
             <ContactInput
-                name="poblacion"
-                label="Población"
-                value={poblacion}
+                name="comentarios"
+                label="Comentarios *"
+                type="textarea"
+                required
+                value={comentarios}
                 focused={focused}
+                error={errors.comentarios}
                 onFocus={setFocused}
                 onBlur={() => setFocused(null)}
-                onInput={setPoblacion}
+                onInput={setComentarios}
             />
 
             <label style={checkboxRowStyle}>
@@ -809,18 +802,6 @@ function FinalStep({
                     />
                     {errors.privacy && <p style={fieldErrorStyle}>{errors.privacy}</p>}
                 </span>
-            </label>
-
-            <label style={checkboxRowStyle}>
-                <input
-                    type="checkbox"
-                    checked={acceptedMarketing}
-                    style={checkboxInputStyle}
-                    onChange={(event) =>
-                        setAcceptedMarketing((event.target as HTMLInputElement).checked)
-                    }
-                />
-                <span>{legal?.marketingCheckboxLabel || DEFAULT_MARKETING_LABEL}</span>
             </label>
 
             {formError && <p style={formErrorStyle}>{formError}</p>}
@@ -866,19 +847,37 @@ function ContactInput({
     onInput: (value: string) => void;
 }) {
     const fieldId = `gds-lead-capture-${name}`;
+    const inputStyle = resolveInputStyle({ focused: focused === name, invalid: !!error });
+    const controlStyle =
+        type === 'textarea'
+            ? { ...inputStyle, minHeight: '88px', resize: 'vertical' as const }
+            : inputStyle;
     return (
         <label style={fieldStyle} for={fieldId}>
             <span style={required ? requiredLabelStyle : optionalLabelStyle}>{label}</span>
-            <input
-                id={fieldId}
-                type={type}
-                value={value}
-                autocomplete="off"
-                style={resolveInputStyle({ focused: focused === name, invalid: !!error })}
-                onFocus={() => onFocus(name)}
-                onBlur={onBlur}
-                onInput={(event) => onInput((event.target as HTMLInputElement).value)}
-            />
+            {type === 'textarea' ? (
+                <textarea
+                    id={fieldId}
+                    value={value}
+                    rows={4}
+                    maxlength={COMENTARIOS_MAX}
+                    style={controlStyle}
+                    onFocus={() => onFocus(name)}
+                    onBlur={onBlur}
+                    onInput={(event) => onInput((event.target as HTMLTextAreaElement).value)}
+                />
+            ) : (
+                <input
+                    id={fieldId}
+                    type={type}
+                    value={value}
+                    autocomplete="off"
+                    style={controlStyle}
+                    onFocus={() => onFocus(name)}
+                    onBlur={onBlur}
+                    onInput={(event) => onInput((event.target as HTMLInputElement).value)}
+                />
+            )}
             {error && <p style={fieldErrorStyle}>{error}</p>}
         </label>
     );
@@ -918,9 +917,10 @@ function prefillFromAnswers(
     answers: LeadCaptureAnswer[]
 ): Partial<Record<ContactField, string>> {
     const prefill: Partial<Record<ContactField, string>> = {};
-    const fields: ContactField[] = ['nombre', 'apellidos', 'email', 'telefono', 'poblacion'];
+    const fields: ContactField[] = ['nombre', 'email', 'telefono', 'comentarios'];
     answers.forEach((answer) => {
-        const field = answer.field as ContactField | undefined;
+        const raw = answer.field === 'comentario' ? 'comentarios' : answer.field;
+        const field = raw as ContactField | undefined;
         if (field && fields.includes(field)) {
             prefill[field] = answer.answer;
         }

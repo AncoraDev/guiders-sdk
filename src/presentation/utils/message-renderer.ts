@@ -22,6 +22,7 @@ export interface MessageRenderData {
             email?: string;
             telefono?: string;
             poblacion?: string;
+            comentarios?: string;
         };
     };
     // 🤖 Campos para mensajes de IA
