@@ -44,8 +44,6 @@ import {
 } from '../signals/toggleState';
 import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal, onlineCommercialCountSignal, assignedPresenceStatusSignal } from '../signals/chatState';
 import { mountChatWidget } from '../components/ChatWidget';
-import { mountConsentBanner } from '../components/ConsentBanner';
-import { ConsentBannerConfig } from '../types/consent-types';
 import { ToggleBridge } from './ToggleBridge';
 
 /** Default timeout for waitForChatCreation, in ms. */
@@ -75,7 +73,6 @@ export class ChatUIBridge {
     /** Patch #1: idempotency + lifecycle disposers */
     private _initialized = false;
     private _disposers: Array<() => void> = [];
-    private _consentBannerDispose: (() => void) | null = null;
 
     /** Delegate for all toggle-button concerns */
     readonly toggleBridge: ToggleBridge = new ToggleBridge();
@@ -291,10 +288,6 @@ export class ChatUIBridge {
             try { d(); } catch (err) { debugError('[ChatUIBridge] Disposer threw:', err); }
         });
         this._disposers = [];
-        if (this._consentBannerDispose) {
-            try { this._consentBannerDispose(); } catch (err) { debugError('[ChatUIBridge] Consent banner cleanup threw:', err); }
-            this._consentBannerDispose = null;
-        }
         this._initialized = false;
         ChatUIBridge._globalInitialized = false;
         // Patch #5: tear down the Preact tree + style effect, then drop refs.
@@ -903,35 +896,6 @@ export class ChatUIBridge {
             dispose();
             if (intervalId) clearInterval(intervalId);
         });
-    }
-
-    // -------------------------------------------------------------------------
-    // Consent banner — PREACT (Story 2.4)
-    // -------------------------------------------------------------------------
-
-    /**
-     * Mounts the GDPR consent banner in document.body (outside Shadow DOM).
-     * Returns a cleanup function that unmounts and removes the element.
-     * Patch #27: tracks the active banner so destroy() can clean it up.
-     */
-    showConsentBanner(
-        config: ConsentBannerConfig,
-        callbacks: {
-            onAccept: () => void;
-            onDeny: () => void;
-            onPreferences?: () => void;
-        }
-    ): () => void {
-        // Unmount any previously active banner first
-        if (this._consentBannerDispose) {
-            try { this._consentBannerDispose(); } catch (err) { debugError('[ChatUIBridge] Previous consent banner cleanup threw:', err); }
-        }
-        const dispose = mountConsentBanner(config, callbacks);
-        this._consentBannerDispose = () => {
-            dispose();
-            this._consentBannerDispose = null;
-        };
-        return this._consentBannerDispose;
     }
 
     // -------------------------------------------------------------------------

@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) {
 
 // Get current tab from URL parameter, default to 'general'
 $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general';
+if ($active_tab === 'cookies' || $active_tab === 'chat') {
+    $active_tab = 'general';
+}
 ?>
 
 <div class="wrap guiders-admin-wrap">
@@ -29,20 +32,10 @@ $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general
             <span class="dashicons dashicons-admin-settings"></span>
             <?php _e('General', 'guiders-wp-plugin'); ?>
         </a>
-        <a href="?page=guiders-settings&tab=chat"
-           class="nav-tab <?php echo $active_tab === 'chat' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-format-chat"></span>
-            <?php _e('Chat', 'guiders-wp-plugin'); ?>
-        </a>
         <a href="?page=guiders-settings&tab=tracking"
            class="nav-tab <?php echo $active_tab === 'tracking' ? 'nav-tab-active' : ''; ?>">
             <span class="dashicons dashicons-chart-line"></span>
             <?php _e('Tracking', 'guiders-wp-plugin'); ?>
-        </a>
-        <a href="?page=guiders-settings&tab=cookies"
-           class="nav-tab <?php echo $active_tab === 'cookies' ? 'nav-tab-active' : ''; ?>">
-            <span class="dashicons dashicons-privacy"></span>
-            <?php _e('Cookies & GDPR', 'guiders-wp-plugin'); ?>
         </a>
     </nav>
 
@@ -57,14 +50,8 @@ $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general
                     case 'general':
                         do_settings_sections('guiders-settings-general');
                         break;
-                    case 'chat':
-                        do_settings_sections('guiders-settings-chat');
-                        break;
                     case 'tracking':
                         do_settings_sections('guiders-settings-tracking');
-                        break;
-                    case 'cookies':
-                        do_settings_sections('guiders-settings-cookies');
                         break;
                     default:
                         do_settings_sections('guiders-settings-general');
@@ -99,36 +86,6 @@ $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general
                     </ul>
                 </div>
 
-            <?php elseif ($active_tab === 'chat'): ?>
-                <!-- Chat Tab Sidebar -->
-                <div class="guiders-info-box">
-                    <h3><?php _e('Chat en Vivo', 'guiders-wp-plugin'); ?></h3>
-                    <p><?php _e('Configura el chat en vivo para comunicarte con tus visitantes en tiempo real.', 'guiders-wp-plugin'); ?></p>
-                    <ul>
-                        <li><?php _e('💬 Chat con carga diferida (lazy loading)', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('⏰ Horarios de disponibilidad personalizables', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('📍 Posición y estilo personalizables', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('👥 Indicadores de presencia y escritura', 'guiders-wp-plugin'); ?></li>
-                    </ul>
-                </div>
-
-                <div class="guiders-info-box">
-                    <h3><?php _e('Quick Actions', 'guiders-wp-plugin'); ?></h3>
-                    <p><?php _e('Botones de acción rápida que aparecen al abrir el chat.', 'guiders-wp-plugin'); ?></p>
-                    <ul>
-                        <li><?php _e('👋 <strong>Enviar mensaje:</strong> Envía un mensaje predefinido', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('👤 <strong>Solicitar agente:</strong> Pide hablar con una persona', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('🔗 <strong>Abrir URL:</strong> Abre un enlace externo', 'guiders-wp-plugin'); ?></li>
-                    </ul>
-                    <p class="description"><?php _e('Facilita la interacción del visitante con opciones predefinidas.', 'guiders-wp-plugin'); ?></p>
-                </div>
-
-                <div class="guiders-info-box">
-                    <h3><?php _e('Mensaje de Consentimiento', 'guiders-wp-plugin'); ?></h3>
-                    <p><?php _e('Muestra un mensaje de consentimiento antes de iniciar el chat para cumplir con GDPR.', 'guiders-wp-plugin'); ?></p>
-                    <p class="description"><?php _e('Personaliza el texto y los enlaces a tu política de privacidad.', 'guiders-wp-plugin'); ?></p>
-                </div>
-
             <?php elseif ($active_tab === 'tracking'): ?>
                 <!-- Tracking Tab Sidebar -->
                 <div class="guiders-info-box">
@@ -152,30 +109,6 @@ $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general
                         <li><?php _e('Botones de compra y checkout', 'guiders-wp-plugin'); ?></li>
                     </ul>
                     <p><strong><?php _e('¡Sin necesidad de modificar el HTML!', 'guiders-wp-plugin'); ?></strong></p>
-                </div>
-
-            <?php elseif ($active_tab === 'cookies'): ?>
-                <!-- Cookies & GDPR Tab Sidebar -->
-                <div class="guiders-info-box">
-                    <h3><?php _e('GDPR & Consentimiento', 'guiders-wp-plugin'); ?></h3>
-                    <p><?php _e('Gestiona el consentimiento de cookies y cumple con GDPR.', 'guiders-wp-plugin'); ?></p>
-                    <ul>
-                        <li><?php _e('🍪 Banner de cookies integrado', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('🔗 Integración con plugins de cookies externos', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('✅ Compatible con WP Consent API', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('🛡️ Control granular por categoría', 'guiders-wp-plugin'); ?></li>
-                    </ul>
-                </div>
-
-                <div class="guiders-info-box">
-                    <h3><?php _e('Plugins Compatibles', 'guiders-wp-plugin'); ?></h3>
-                    <ul>
-                        <li><?php _e('✅ Moove GDPR Cookie Compliance', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('✅ Beautiful Cookie Banner', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('✅ WP Consent API', 'guiders-wp-plugin'); ?></li>
-                        <li><?php _e('✅ Cualquier plugin compatible con WP Consent API', 'guiders-wp-plugin'); ?></li>
-                    </ul>
-                    <p class="description"><?php _e('El SDK detecta automáticamente el gestor de cookies activo.', 'guiders-wp-plugin'); ?></p>
                 </div>
             <?php endif; ?>
 

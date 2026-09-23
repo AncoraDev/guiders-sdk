@@ -36,9 +36,6 @@ class GuidersPublic {
      * Initialize public hooks
      */
     private function initHooks() {
-        // Register with WP Consent API (if available)
-        $this->registerWithWPConsentAPI();
-
         // Only load if plugin is enabled and API key is set
         if ($this->isPluginActive()) {
             // Enqueue scripts and styles
@@ -60,16 +57,6 @@ class GuidersPublic {
         }
     }
 
-    /**
-     * Register plugin with WP Consent API
-     * This makes the plugin officially compatible with cookie consent plugins
-     */
-    private function registerWithWPConsentAPI() {
-        // Register this plugin as WP Consent API compatible
-        $plugin = plugin_basename(GUIDERS_WP_PLUGIN_PLUGIN_FILE);
-        add_filter("wp_consent_api_registered_{$plugin}", '__return_true');
-    }
-    
     /**
      * Check if plugin is active and properly configured
      */
@@ -127,7 +114,7 @@ class GuidersPublic {
             'apiKey' => $this->settings['api_key'],
             'environment' => isset($this->settings['environment']) ? $this->settings['environment'] : 'production',
             'features' => array(
-                'chat' => isset($this->settings['chat_enabled']) ? $this->settings['chat_enabled'] : true,
+                'chat' => true,
                 'tracking' => isset($this->settings['tracking_enabled']) ? $this->settings['tracking_enabled'] : true,
                 'heuristicDetection' => isset($this->settings['heuristic_detection']) ? $this->settings['heuristic_detection'] : true,
             ),
@@ -148,33 +135,24 @@ class GuidersPublic {
                 'isEDD' => class_exists('Easy_Digital_Downloads'),
                 'pageType' => $this->getPageType()
             ),
-            'chatConsentMessage' => $this->getChatConsentMessageConfig(),
-            'activeHours' => $this->getActiveHoursConfig(),
-            'commercialAvailability' => $this->getCommercialAvailabilityConfig(),
-            'requireConsent' => isset($this->settings['require_consent']) ? $this->settings['require_consent'] : false,
-            'consentBanner' => $this->getConsentBannerConfig(),
-            'chatPosition' => $this->getChatPositionConfig(),
-            'mobileDetection' => $this->getMobileDetectionConfig(),
+            'chatConsentMessage' => array('enabled' => false),
+            'activeHours' => array('enabled' => false),
+            'commercialAvailability' => array(
+                'enabled' => true,
+                'hideWhenUnavailable' => false,
+                'showBadge' => true,
+            ),
+            'requireConsent' => false,
+            'consentBanner' => array('enabled' => false),
             'autoFlush' => isset($this->settings['auto_flush']) ? $this->settings['auto_flush'] : true,
             'flushInterval' => isset($this->settings['flush_interval']) ? intval($this->settings['flush_interval']) : 5000,
             'trackingV2' => $this->getTrackingV2Config(),
             'presence' => $this->getPresenceConfig(),
-            'autoOpenChatOnMessage' => isset($this->settings['auto_open_chat_on_message']) ? (bool)$this->settings['auto_open_chat_on_message'] : true,
-            'quickActions' => $this->getQuickActionsConfig(),
-            'aiConfig' => $this->getAIConfig(),
+            'autoOpenChatOnMessage' => true,
+            'quickActions' => array('enabled' => false),
             'chatSelector' => $this->getChatSelectorConfig(),
-            // Color-scheme override (dark / light / system).
-            // 'system' means "follow OS prefers-color-scheme" — omit the key to avoid
-            // sending a redundant value; the SDK treats missing as 'system'.
-            'colorScheme' => isset($this->settings['chat_color_scheme']) && in_array($this->settings['chat_color_scheme'], array('system', 'light', 'dark'), true)
-                ? $this->settings['chat_color_scheme']
-                : 'system',
-            // Design theme (default / carbon).
-            // Note: 'theme' top-level is the design-theme ThemeId — distinct from
-            // 'wordpress.theme' (get_template()) in the sub-array above.
-            'theme' => isset($this->settings['chat_theme']) && in_array($this->settings['chat_theme'], array('default', 'carbon'), true)
-                ? $this->settings['chat_theme']
-                : 'default',
+            'colorScheme' => 'system',
+            'theme' => 'default',
         );
 
         // Add environment-specific endpoints
@@ -258,426 +236,6 @@ class GuidersPublic {
         ?>
     <script type="text/javascript">
     (function() {
-            // Configuración del sistema de cookies desde WordPress
-            var cookieConfig = <?php echo json_encode(array(
-                'system' => isset($this->settings['cookie_consent_system']) ? $this->settings['cookie_consent_system'] : 'auto',
-                'wp_consent_api_enabled' => isset($this->settings['wp_consent_api_sync_enabled']) ? $this->settings['wp_consent_api_sync_enabled'] : true,
-                'debug' => isset($this->settings['cookie_consent_debug']) ? $this->settings['cookie_consent_debug'] : false
-            )); ?>;
-
-            // Log de configuración (ejecutado inmediatamente al cargar el script)
-
-            // Exponer para debugging
-            window.guidersCookieConfig = cookieConfig;
-
-            // WP Consent API Integration
-            // Sincroniza el consentimiento del plugin de cookies con Guiders SDK
-            // Retorna: true si detectó WP Consent API, false si no
-            function setupConsentSync() {
-                // Verificar si la sincronización está habilitada
-                if (!cookieConfig.wp_consent_api_enabled) {
-                    
-                    return false;
-                }
-
-                // Verificar si se debe forzar el sistema interno
-                if (cookieConfig.system === 'internal') {
-                    
-                    return false;
-                }
-
-                // Verificar si WP Consent API está disponible
-                var hasWPConsentAPI = typeof wp_has_consent !== 'undefined' && typeof wp_set_consent !== 'undefined';
-
-                if (!hasWPConsentAPI) {
-                    if (cookieConfig.debug || cookieConfig.system === 'wp_consent_api') {
-                    }
-                    return false;
-                }
-
-                // Si el sistema es 'custom', no hacer nada (el usuario debe implementar su lógica)
-                if (cookieConfig.system === 'custom') {
-                    
-                    return false;
-                }
-
-                
-
-                // Mapeo de categorías: WP Consent API → Guiders SDK
-                var categoryMap = {
-                    'functional': 'functional',           // Cookies funcionales
-                    'statistics': 'analytics',            // Estadísticas → Analytics
-                    'marketing': 'personalization'        // Marketing → Personalización
-                };
-
-                // Función para sincronizar consentimiento inicial desde WP Consent API a Guiders
-                function syncInitialConsent() {
-                    if (!window.guiders || !window.guiders.grantConsentWithPreferences) {
-                        
-                        return;
-                    }
-
-                    var guidersConsent = {};
-                    var hasAnyConsent = false;
-
-                    // Leer estado de consentimiento de cada categoría
-                    Object.keys(categoryMap).forEach(function(wpCategory) {
-                        var guidersCategory = categoryMap[wpCategory];
-                        var hasConsent = wp_has_consent(wpCategory);
-                        guidersConsent[guidersCategory] = hasConsent;
-                        if (hasConsent) hasAnyConsent = true;
-                        
-                    });
-
-                    // Actualizar consentimiento en Guiders SDK
-                    if (hasAnyConsent) {
-                        window.guiders.grantConsentWithPreferences(guidersConsent);
-                        
-                    }
-                }
-
-                // Función para escuchar cambios de consentimiento en tiempo real
-                function setupConsentChangeListener() {
-                    // Escuchar cambios en cada categoría
-                    Object.keys(categoryMap).forEach(function(wpCategory) {
-                        var guidersCategory = categoryMap[wpCategory];
-
-                        document.addEventListener('wp_listen_for_consent_change', function(event) {
-                            if (!window.guiders || !window.guiders.grantConsentWithPreferences) return;
-
-                            // Verificar si el cambio afecta a esta categoría
-                            var newConsent = wp_has_consent(wpCategory);
-
-                            // Actualizar Guiders con el nuevo estado
-                            var update = {};
-                            update[guidersCategory] = newConsent;
-                            window.guiders.grantConsentWithPreferences(update);
-
-                            
-                        });
-                    });
-
-                    
-                }
-
-                // Ejecutar sincronización inicial y configurar listener
-                syncInitialConsent();
-                setupConsentChangeListener();
-
-                return true; // WP Consent API detectada y configurada
-            }
-
-            // Moove GDPR Integration (GDPR Cookie Compliance)
-            // Integración con el plugin "GDPR Cookie Compliance" de Moove
-            // Retorna: true si detectó Moove GDPR, false si no
-            function setupMooveGDPRSync() {
-                // Verificar si debe sincronizarse
-                if (!cookieConfig.wp_consent_api_enabled) {
-                    
-                    return false;
-                }
-
-                // Verificar si se debe forzar el sistema interno
-                if (cookieConfig.system === 'internal') {
-                    
-                    return false;
-                }
-
-                // Verificar si Moove GDPR está presente
-                var hasMooveGDPR = typeof moove_gdpr_popup !== 'undefined' || document.getElementById('moove_gdpr_cookie_modal') !== null;
-
-                if (!hasMooveGDPR) {
-                    if (cookieConfig.debug && cookieConfig.system === 'custom') {
-                    }
-                    return false;
-                }
-
-                
-
-                // Función helper para leer cookies
-                function getCookie(name) {
-                    var nameEQ = name + "=";
-                    var ca = document.cookie.split(';');
-                    for(var i = 0; i < ca.length; i++) {
-                        var c = ca[i];
-                        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-                    }
-                    return null;
-                }
-
-                // Función para leer el consentimiento de Moove GDPR
-                function readMooveConsent() {
-                    // MÉTODO 1: Leer cookie moove_gdpr_popup (formato JSON)
-                    // Configuración de 3 categorías: {"strict":"1","performance":"1","targeting":"1"}
-                    // Configuración de 5 categorías: {"strict":"1","thirdparty":"1","advanced":"1","performance":"1","preference":"1"}
-                    var cookieValue = getCookie('moove_gdpr_popup');
-
-                    if (!cookieValue) {
-                        
-                        return null;
-                    }
-
-                    try {
-                        // Decodificar URL encoding
-                        var decoded = decodeURIComponent(cookieValue);
-                        var cookieData = JSON.parse(decoded);
-
-                        
-
-                        // MAPEO FLEXIBLE: Detecta automáticamente si usa 3 o 5 categorías
-                        //
-                        // CATEGORÍAS COMUNES (3 categorías):
-                        // - strict (strictly necessary) -> functional
-                        // - performance (analytics) -> analytics
-                        // - targeting/marketing -> personalization
-                        //
-                        // CATEGORÍAS EXTENDIDAS (5 categorías):
-                        // - strict (strictly necessary) -> functional
-                        // - performance (analytics) -> analytics
-                        // - thirdparty (third party cookies) -> analytics
-                        // - advanced (advanced/marketing) -> personalization
-                        // - preference (user preferences) -> personalization
-
-                        var consent = {
-                            functional: cookieData.strict === '1',
-                            analytics: false,
-                            personalization: false
-                        };
-
-                        // Analytics: performance, thirdparty
-                        if (cookieData.performance === '1') consent.analytics = true;
-                        if (cookieData.thirdparty === '1') consent.analytics = true;
-
-                        // Personalization: targeting, marketing, advanced, preference
-                        if (cookieData.targeting === '1') consent.personalization = true;
-                        if (cookieData.marketing === '1') consent.personalization = true;
-                        if (cookieData.advanced === '1') consent.personalization = true;
-                        if (cookieData.preference === '1') consent.personalization = true;
-
-                        return consent;
-                    } catch (e) {
-                        
-                    }
-
-                    // MÉTODO 2 (FALLBACK): Leer localStorage (método antiguo)
-                    var functional = localStorage.getItem('moove_gdpr_popup') === '1' ||
-                                   localStorage.getItem('moove_gdpr_strict') === '1';
-                    var analytics = localStorage.getItem('moove_gdpr_performance') === '1' ||
-                                  localStorage.getItem('moove_gdpr_thirdparty') === '1';
-                    var personalization = localStorage.getItem('moove_gdpr_targeting') === '1' ||
-                                        localStorage.getItem('moove_gdpr_marketing') === '1' ||
-                                        localStorage.getItem('moove_gdpr_advanced') === '1' ||
-                                        localStorage.getItem('moove_gdpr_preference') === '1';
-
-                    return {
-                        functional: functional,
-                        analytics: analytics,
-                        personalization: personalization
-                    };
-                }
-
-                // Función para sincronizar con Guiders SDK (con reintentos automáticos)
-                var syncRetries = 0;
-                var maxSyncRetries = 20; // 20 reintentos x 500ms = 10 segundos máximo
-
-                function syncMooveToGuiders() {
-                    if (!window.guiders || !window.guiders.grantConsentWithPreferences) {
-                        if (syncRetries < maxSyncRetries) {
-                            syncRetries++;
-                            
-                            setTimeout(syncMooveToGuiders, 500);
-                        } else {
-                        }
-                        return;
-                    }
-
-                    var consent = readMooveConsent();
-
-                    if (!consent) {
-                        
-                        return;
-                    }
-
-
-                    // Actualizar Guiders con el consentimiento usando el método correcto
-                    window.guiders.grantConsentWithPreferences(consent);
-
-
-                    // Resetear contador de reintentos para futuras sincronizaciones
-                    syncRetries = 0;
-                }
-
-                // Escuchar el evento de cierre del modal de Moove
-                document.addEventListener('moove_gdpr_modal_closed', function() {
-                    setTimeout(syncMooveToGuiders, 100); // Pequeño delay para asegurar que la cookie esté actualizada
-                });
-
-                // Polling de cambios en cookie (fallback si no hay evento)
-                var lastMooveConsent = getCookie('moove_gdpr_popup');
-                setInterval(function() {
-                    var currentConsent = getCookie('moove_gdpr_popup');
-                    if (currentConsent !== lastMooveConsent) {
-                        lastMooveConsent = currentConsent;
-                        syncMooveToGuiders();
-                    }
-                }, 1000); // Verificar cada segundo
-
-                // Sincronizar estado inicial
-                syncMooveToGuiders();
-
-                
-
-                return true; // Moove GDPR detectado y configurado
-            }
-
-            // Beautiful Cookie Banner Integration
-            // Integración con el plugin "Beautiful Cookie Banner" (basado en Osano Cookie Consent 3.1.0)
-            // Retorna: true si detectó Beautiful Cookie Banner, false si no
-            function setupBeautifulCookieBannerSync() {
-                // Verificar si debe sincronizarse
-                if (!cookieConfig.wp_consent_api_enabled) {
-                    
-                    return false;
-                }
-
-                // Verificar si se debe forzar el sistema interno
-                if (cookieConfig.system === 'internal') {
-                    
-                    return false;
-                }
-
-                // Helper: Leer cookie por nombre
-                function getCookie(name) {
-                    var value = '; ' + document.cookie;
-                    var parts = value.split('; ' + name + '=');
-                    if (parts.length === 2) {
-                        return parts.pop().split(';').shift();
-                    }
-                    return null;
-                }
-
-                // Detectar Beautiful Cookie Banner (cookie O elementos DOM)
-                var hasBeautifulCookieBanner = document.cookie.indexOf('cookieconsent_status') !== -1 ||
-                                              document.querySelector('.cc-window') !== null ||
-                                              document.querySelector('.cc-banner') !== null;
-
-                if (!hasBeautifulCookieBanner) {
-                    
-                    return false;
-                }
-
-                
-
-                // Función para leer consentimiento de Beautiful Cookie Banner
-                function readBeautifulCookieBannerConsent() {
-                    var cookieValue = getCookie('cookieconsent_status');
-
-                    if (!cookieValue) {
-                        
-                        return null;
-                    }
-
-                    
-
-                    // Intentar parsear como JSON (modo diferenciado)
-                    try {
-                        var parsed = JSON.parse(decodeURIComponent(cookieValue));
-
-                        // Modo diferenciado: {"tech":"true","analytics":"false","marketing":"true"}
-                        if (typeof parsed === 'object' && parsed !== null) {
-                            var consent = {
-                                functional: parsed.tech === 'true' || parsed.tech === true,
-                                analytics: parsed.analytics === 'true' || parsed.analytics === true,
-                                personalization: parsed.marketing === 'true' || parsed.marketing === true
-                            };
-
-                            return consent;
-                        }
-                    } catch (e) {
-                        // No es JSON, es modo simple
-                    }
-
-                    // Modo simple: "allow", "deny", "dismiss"
-                    // Usar modo ESTRICTO (solo 'allow' = consentimiento)
-                    var hasConsent = cookieValue === 'allow';
-
-
-                    return {
-                        functional: hasConsent,
-                        analytics: hasConsent,
-                        personalization: hasConsent
-                    };
-                }
-
-                // Función para sincronizar con Guiders SDK (con reintentos automáticos)
-                var syncRetries = 0;
-                var maxSyncRetries = 20; // 20 reintentos x 500ms = 10 segundos máximo
-
-                function syncBeautifulCookieBannerToGuiders() {
-                    if (!window.guiders || !window.guiders.grantConsentWithPreferences) {
-                        if (syncRetries < maxSyncRetries) {
-                            syncRetries++;
-                            
-                            setTimeout(syncBeautifulCookieBannerToGuiders, 500);
-                        } else {
-                        }
-                        return;
-                    }
-
-                    var consent = readBeautifulCookieBannerConsent();
-
-                    if (!consent) {
-                        
-                        return;
-                    }
-
-
-                    // Actualizar Guiders con el consentimiento usando el método correcto
-                    window.guiders.grantConsentWithPreferences(consent);
-
-
-                    // Resetear contador de reintentos para futuras sincronizaciones
-                    syncRetries = 0;
-                }
-
-                // Método 1: Escuchar eventos dataLayer (recomendado)
-                if (typeof window.dataLayer !== 'undefined') {
-                    var originalPush = window.dataLayer.push;
-                    window.dataLayer.push = function() {
-                        var args = Array.prototype.slice.call(arguments);
-                        var data = args[0];
-
-                        if (data && (data.event === 'beautiful_cookie_consent_updated' ||
-                                    data.event === 'beautiful_cookie_consent_initialized')) {
-                            
-                            setTimeout(syncBeautifulCookieBannerToGuiders, 100);
-                        }
-
-                        return originalPush.apply(window.dataLayer, args);
-                    };
-
-                    
-                }
-
-                // Método 2: Polling de cambios en cookie (fallback)
-                var lastConsent = getCookie('cookieconsent_status');
-                setInterval(function() {
-                    var currentConsent = getCookie('cookieconsent_status');
-                    if (currentConsent !== lastConsent) {
-                        lastConsent = currentConsent;
-                        syncBeautifulCookieBannerToGuiders();
-                    }
-                }, 1000);
-
-                // Sincronizar estado inicial
-                setTimeout(syncBeautifulCookieBannerToGuiders, 500);
-
-                
-
-                return true; // Beautiful Cookie Banner detectado y configurado
-            }
-
             // Wait for DOM to be ready
             function initGuiders() {
                 if (typeof window.TrackingPixelSDK === 'undefined') {
@@ -698,6 +256,7 @@ class GuidersPublic {
                     // Create SDK options
                     var sdkOptions = {
                         apiKey: config.apiKey,
+                        requireConsent: false,
                         autoFlush: config.autoFlush !== undefined ? config.autoFlush : true,
                         flushInterval: config.flushInterval || 5000,
                         maxRetries: 2,
@@ -767,39 +326,6 @@ class GuidersPublic {
                         sdkOptions.webSocketEndpoint = (config.webSocketEndpoint + '').replace(/\/+$/,'');
                     }
                     
-                    // ⚠️ IMPORTANTE: Sincronizar consentimiento INMEDIATAMENTE
-                    // Debe ejecutarse ANTES de cualquier inicialización del SDK (incluso antes del delay)
-                    // Si requireConsent=true, el SDK espera consentimiento para inicializarse
-
-                    var hasWPConsent = setupConsentSync();
-                    var hasMooveGDPR = setupMooveGDPRSync();
-                    var hasBeautifulCookie = setupBeautifulCookieBannerSync();
-
-                    // Resumen de detección (SIEMPRE mostrar, no requiere debug)
-                    var detected = [];
-                    if (hasWPConsent) detected.push('WP Consent API');
-                    if (hasMooveGDPR) detected.push('Moove GDPR');
-                    if (hasBeautifulCookie) detected.push('Beautiful Cookie Banner');
-
-                    if (detected.length > 0) {
-
-                        // ⚠️ IMPORTANTE: Si se detecta un gestor externo, FORZAR requireConsent=true
-                        // Esto asegura que el chat no se muestre hasta que se otorgue consentimiento
-                        if (!sdkOptions.requireConsent) {
-                            sdkOptions.requireConsent = true;
-                        }
-
-                        // ⚠️ CRÍTICO: Limpiar localStorage del ConsentManager para que el SDK inicie con estado 'pending'
-                        // Esto evita que el SDK use un consentimiento antiguo cuando hay un gestor externo activo
-                        if (typeof localStorage !== 'undefined') {
-                            var oldState = localStorage.getItem('guiders_consent_state');
-                            if (oldState) {
-                                localStorage.removeItem('guiders_consent_state');
-                            }
-                        }
-                    } else {
-                    }
-
                     function doInit() {
                         if (window.guiders) {
                             return; // safeguard

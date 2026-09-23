@@ -1,6 +1,7 @@
 // chat-types.ts - Tipos e interfaces para el sistema de chat
 
 import { ChatPositionConfig, MobileDetectionConfig, AIConfig } from "../../types";
+import type { DeviceSpecificPosition } from "../../utils/position-resolver";
 import { AIMetadata } from "../../types/websocket-types";
 import type { QuickActionsConfig } from "./quick-actions-types";
 import type { ChatSelectorConfig } from "./chat-selector-types";
@@ -80,7 +81,7 @@ export interface ChatUIOptions {
 	/** Título cuando no hay comerciales online (default: "Atención al usuario"). Con equipo online el header usa "Equipo conectado". */
 	title?: string;
 	/** Configuración de posicionamiento del chat widget */
-	position?: ChatPositionConfig;
+	position?: ChatPositionConfig | DeviceSpecificPosition;
 	/** Configuración de detección de dispositivo móvil */
 	mobileDetection?: MobileDetectionConfig;
 	/** Configuración del mensaje de consentimiento del chat */

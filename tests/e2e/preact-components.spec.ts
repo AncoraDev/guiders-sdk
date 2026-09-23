@@ -123,38 +123,8 @@ test.describe('Preact components — smoke tests', () => {
         await expect(toggle).not.toHaveClass(/open/);
     });
 
-    test('ConsentBanner renders when consent is pending and dismisses on accept', async ({ page }) => {
-        // Force a pending consent state before the SDK boots. The init
-        // script runs after the navigation context is set so localStorage
-        // is bound to the correct origin.
-        await page.addInitScript(() => {
-            try {
-                localStorage.removeItem('guiders_consent_state');
-                localStorage.removeItem('guiders_consent');
-                localStorage.removeItem('guiders_cookie_consent');
-            } catch {
-                /* sandboxed contexts */
-            }
-        });
-
+    test('does not render a Guiders GDPR banner', async ({ page }) => {
         await gotoDemo(page);
-
-        // The consent banner is mounted into a top-level host element
-        // (NOT inside the SDK's shadow root — see consent-banner.tsx
-        // mountConsentBanner: it appends `#guiders-consent-banner-preact`
-        // to document.body so it can be styled by the host page).
-        const banner = page.locator('#guiders-consent-banner-preact .guiders-consent');
-        const present = await banner.count();
-        test.skip(present === 0, 'Consent banner not rendered (consent management disabled in demo build)');
-
-        await expect(banner.first()).toBeVisible();
-        await expect(banner.locator('.guiders-consent__btn--accept').first()).toBeVisible();
-        await expect(banner.locator('.guiders-consent__btn--deny').first()).toBeVisible();
-
-        await banner.locator('.guiders-consent__btn--accept').first().click();
-        await page.waitForTimeout(300);
-
-        // After accepting, the banner host is unmounted.
         await expect(page.locator('#guiders-consent-banner-preact .guiders-consent')).toHaveCount(0);
 
         const granted = await page.evaluate(() =>

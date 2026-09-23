@@ -71,10 +71,12 @@ La documentación del **plugin WordPress** (guías de usuario, GDPR WP, debuggin
 
 ## WordPress (SDK)
 
+El plugin solo instala el pixel (API key, entorno, tracking). Chat on/off, tema y posición los lee el SDK de `GET /api/v2/widget/config`. Se configuran en Console → Chat web. No hay pestaña Chat ni Cookies/GDPR en el admin de WP.
+
 | Documento | Descripción |
 |-----------|-------------|
 | [DOCKER_WORDPRESS.md](./wordpress/DOCKER_WORDPRESS.md) | Docker local WP (`wordpress-plugin/docker-compose.yml`) |
-| [WORDPRESS_ACTIVE_HOURS.md](./wordpress/WORDPRESS_ACTIVE_HOURS.md) | Horario activo en WP |
+| [WORDPRESS_ACTIVE_HOURS.md](./wordpress/WORDPRESS_ACTIVE_HOURS.md) | Horario activo en WP (código SDK; ya no se configura en el plugin) |
 | [WORDPRESS_AUTO_UPDATES.md](./wordpress/WORDPRESS_AUTO_UPDATES.md) | Auto-updates del plugin |
 
 **Más docs del plugin:** [`wordpress-plugin/README.md`](../wordpress-plugin/README.md), [`GUIA-USUARIO.md`](../wordpress-plugin/GUIA-USUARIO.md), [`DEBUGGING_GUIDE.md`](../wordpress-plugin/DEBUGGING_GUIDE.md).

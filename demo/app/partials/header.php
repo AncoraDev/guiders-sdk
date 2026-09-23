@@ -31,10 +31,6 @@
       dev: <?php echo $guidersIsRemote ? 'false' : 'true'; ?>,
       endpoint: <?php echo json_encode($guidersEndpoint); ?>,
       webSocketEndpoint: <?php echo json_encode($guidersWs); ?>,
-      requireConsent: false, // ✅ Consentimiento DESACTIVADO - SDK funciona sin barreras GDPR
-      consentBanner: {
-        enabled: false        // ✅ Banner de consentimiento DESACTIVADO
-      },
       autoFlush: true,        // ✅ IMPORTANTE: Habilitar envío automático de eventos
       flushInterval: 5000,    // Enviar eventos cada 5 segundos
       autoOpenChatOnMessage: true, // ✅ Auto-abrir chat cuando comercial envía mensaje

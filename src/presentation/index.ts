@@ -5,8 +5,6 @@ export { ChatUIBridge as ChatUI } from './bridge/ChatUIBridge';
 
 // Types
 export type { Sender, ChatUIOptions, ChatMessageParams, ActiveInterval } from './types/chat-types';
-export type { ConsentBannerConfig } from './types/consent-types';
-
 // Utilities
 export {
     formatTime,

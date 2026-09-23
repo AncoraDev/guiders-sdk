@@ -27,6 +27,7 @@ export { EndpointManager } from "./endpoint-manager";
 // ChatInputUI removed — onSubmit handled via ChatUIBridge.onSubmit → signal
 import { fetchChatDetail, fetchChatDetailV2, ChatDetail, ChatDetailV2, ChatParticipant } from "../services/chat-detail-service";
 import { VisitorInfoV2, ChatMetadataV2, ChatPositionConfig, MobileDetectionConfig, ChatListV2, TrackingEventDto } from "../types";
+import type { DeviceSpecificPosition } from "../utils/position-resolver";
 import { v4 as uuidv4 } from "uuid";
 import { DomTrackingManager, DefaultTrackDataExtractor } from "./dom-tracking-manager";
 import { EnhancedDomTrackingManager } from "./enhanced-dom-tracking-manager";
@@ -43,8 +44,6 @@ import { IdentityWithChatsData } from "./identity-signal";
 import { RealtimeMessageManager } from "../services/realtime-message-manager";
 import { ConsentManager, ConsentManagerConfig, ConsentState } from "./consent-manager";
 import { ConsentBackendService } from "../services/consent-backend-service";
-import { ConsentBannerConfig } from '../presentation/types/consent-types';
-// ConsentBannerUI removed — banner is mounted via ChatUIBridge.showConsentBanner
 import { QuickActionsConfig } from "../presentation/types/quick-actions-types";
 import { ChatSelectorConfig } from "../presentation/types/chat-selector-types";
 import { debugLog } from "../utils/debug-logger";
@@ -93,9 +92,9 @@ interface SDKOptions {
 	// Mobile device detection configuration
 	mobileDetection?: MobileDetectionConfig;
 	// GDPR Consent Configuration
-	requireConsent?: boolean; // If false, SDK initializes without consent (default: true)
-	consent?: Partial<ConsentManagerConfig>; // Advanced consent options
-	consentBanner?: ConsentBannerConfig; // Consent banner UI (auto-render banner for GDPR)
+	requireConsent?: boolean; // Ignorado: el pixel ya no espera ni muestra banner GDPR
+	consent?: Partial<ConsentManagerConfig>; // Legacy; el estado interno queda granted
+	consentBanner?: unknown; // Ignorado: el banner GDPR se eliminó del pixel
 	// Commercial Availability Configuration
 	commercialAvailability?: Partial<CommercialAvailabilityConfig>; // Auto show/hide chat based on commercial availability
 	// Presence & Typing Indicators Configuration
@@ -176,7 +175,7 @@ export class TrackingPixelSDK {
 	private authMode: 'jwt' | 'session';
 	private identitySignal: IdentitySignal;
 	private chatConsentMessageConfig?: Partial<import('../presentation/types/chat-types').ChatConsentMessageConfig>;
-	private chatPositionConfig?: ChatPositionConfig;
+	private chatPositionConfig?: ChatPositionConfig | DeviceSpecificPosition;
 	private mobileDetectionConfig?: MobileDetectionConfig;
 	private activeHoursValidator?: ActiveHoursValidator;
 	private identifyExecuted: boolean = false; // Flag para prevenir múltiples llamadas a identify()
@@ -187,7 +186,6 @@ export class TrackingPixelSDK {
 	private presenceManager: PresenceManager | null = null;
 	private consentManager: ConsentManager;
 	private consentBackendService: ConsentBackendService;
-	// consentBanner removed — mounted via ChatUIBridge.showConsentBanner
 	private commercialAvailabilityService: CommercialAvailabilityService | null = null;
 	/** Guion de captación en curso de resolver; una sola petición por carga. */
 	private leadCaptureFlowReady: Promise<boolean> | null = null;
@@ -207,6 +205,7 @@ export class TrackingPixelSDK {
 	private aiConfig?: Partial<AIConfig>;
 	private chatSelectorConfig?: Partial<ChatSelectorConfig>;
 	private themeId?: string;
+	private chatEnabled = true;
 	private colorSchemeOverride?: 'dark' | 'light' | 'system';
 	// Flag para indicar que el usuario quiere crear un nuevo chat
 	// Se establece en true cuando se pulsa "Nueva conversación"
@@ -362,17 +361,11 @@ export class TrackingPixelSDK {
 		// Nota: PresenceService se inicializará después de identify() cuando tengamos visitorId
 		// Ver método `setupPresenceService()` para la inicialización real
 
-		// Inicializar el gestor de consentimiento GDPR
-		// requireConsent (default: false) controla si se requiere consentimiento
-		// Si requireConsent es false, el SDK se inicializa sin esperar consentimiento
-		const requireConsent = options.requireConsent ?? false;
-		const waitForConsent = options.consent?.waitForConsent ?? requireConsent;
-		const defaultStatus = requireConsent ? (options.consent?.defaultStatus || 'pending') : 'granted';
-
+		// El pixel no bloquea por GDPR: el banner del site cliente es el que manda.
 		this.consentManager = ConsentManager.getInstance({
-			version: __SDK_VERSION__, // Versión sincronizada automáticamente desde package.json
-			waitForConsent: waitForConsent,
-			defaultStatus: defaultStatus,
+			version: __SDK_VERSION__,
+			waitForConsent: false,
+			defaultStatus: 'granted',
 			onConsentChange: (state) => {
 				debugLog('[TrackingPixelSDK] 🔐 Estado de consentimiento cambiado:', state);
 
@@ -404,13 +397,11 @@ export class TrackingPixelSDK {
 		debugLog('[TrackingPixelSDK] 🔐 ConsentBackendService inicializado');
 
 		// Configurar disponibilidad de comerciales (opcional)
-		this.commercialAvailabilityConfig = options.commercialAvailability;
-
-		// Inicializar el banner de consentimiento si está configurado
-		// Solo mostrar el banner si se requiere consentimiento
-		if (requireConsent && options.consentBanner && options.consentBanner.enabled !== false) {
-			this.initConsentBanner(options.consentBanner);
-		}
+		this.commercialAvailabilityConfig = options.commercialAvailability ?? {
+			enabled: true,
+			hideWhenUnavailable: false,
+			showBadge: true,
+		};
 
 		// Crear la instancia de SessionInjectionStage
 		this.sessionInjectionStage = new SessionInjectionStage();
@@ -560,6 +551,7 @@ export class TrackingPixelSDK {
 		// La identificación del visitante ahora se realiza solo cuando se abre la pestaña
 		// mediante un listener de visibilitychange/focus
 		this.setupTabOpenListener();
+		await this.applyRemoteWidgetConfig();
 		// Guardar la referencia al chat para usarla más tarde (ej: mostrar mensajes del sistema)
 		this.chatUI = new ChatUI({
 			widget: true,
@@ -589,6 +581,15 @@ export class TrackingPixelSDK {
 
 		const initializeChatComponents = () => {
 			debugLog("Inicializando componentes del chat rápidamente...");
+
+			if (!this.chatEnabled) {
+				debugLog('[TrackingPixelSDK] Chat deshabilitado desde Console');
+				chat.init();
+				chat.hide();
+				chat.initToggleButton();
+				chat.hideToggleButton();
+				return;
+			}
 			
 			// Verificar horarios activos antes de inicializar
 			if (this.activeHoursValidator && !this.activeHoursValidator.isChatActive()) {
@@ -3120,6 +3121,7 @@ export class TrackingPixelSDK {
 	private async initChatUIOnly(): Promise<void> {
 		debugLog('[TrackingPixelSDK] 🔐 Inicializando solo chat UI (sin tracking)');
 
+		await this.applyRemoteWidgetConfig();
 		// Inicializar solo los componentes del chat
 		this.chatUI = new ChatUI({
 			widget: true,
@@ -3248,31 +3250,59 @@ export class TrackingPixelSDK {
 		debugLog('[TrackingPixelSDK] ✅ Todas las actividades de tracking detenidas');
 	}
 
-	/**
-	 * Inicializa el banner de consentimiento integrado
-	 */
-	private initConsentBanner(config: ConsentBannerConfig): void {
-		debugLog('[TrackingPixelSDK] 🎨 Inicializando banner de consentimiento...');
-
-		const cleanup = this.chatUI?.showConsentBanner(config, {
-			onAccept: () => {
-				debugLog('[TrackingPixelSDK] ✅ Usuario aceptó desde banner');
-				this.grantConsent();
-				cleanup?.();
-			},
-			onDeny: () => {
-				debugLog('[TrackingPixelSDK] ❌ Usuario rechazó desde banner');
-				this.denyConsent();
-				cleanup?.();
-			},
-			onPreferences: () => {
-				debugLog('[TrackingPixelSDK] ⚙️ Usuario abrió preferencias desde banner');
-				alert('Modal de preferencias: Próximamente.\n\nPor ahora, puedes:\n- Aceptar Todo = Otorgar consentimiento completo\n- Rechazar = Solo cookies esenciales');
-			},
-		});
-
-		if (config.autoShow && this.consentManager.isPending()) {
-			debugLog('[TrackingPixelSDK] 👁️ Banner mostrado automáticamente (consent pending)');
+	private async applyRemoteWidgetConfig(): Promise<void> {
+		try {
+			const endpoint = (
+				this.endpoint ||
+				EndpointManager.getInstance().getEndpoint()
+			).replace(/\/+$/, '');
+			const domain = (window.location.hostname || '').replace(/^www\./i, '');
+			if (!domain || !this.apiKey) {
+				return;
+			}
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), 2500);
+			const url =
+				`${endpoint}/v2/widget/config` +
+				`?domain=${encodeURIComponent(domain)}` +
+				`&apiKey=${encodeURIComponent(this.apiKey)}`;
+			const response = await fetch(url, { signal: controller.signal });
+			clearTimeout(timer);
+			if (!response.ok) {
+				debugLog('[TrackingPixelSDK] Widget config remota no disponible:', response.status);
+				return;
+			}
+			const config = (await response.json()) as {
+				chatEnabled?: boolean;
+				autoOpenChatOnMessage?: boolean;
+				colorScheme?: 'system' | 'light' | 'dark';
+				theme?: string;
+				position?: {
+					desktop?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+					mobileEnabled?: boolean;
+					mobile?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+				};
+			};
+			this.chatEnabled = config.chatEnabled !== false;
+			this.autoOpenChatOnMessage = config.autoOpenChatOnMessage !== false;
+			if (config.colorScheme) {
+				this.colorSchemeOverride = config.colorScheme;
+			}
+			if (config.theme) {
+				this.themeId = config.theme;
+			}
+			if (config.position?.desktop) {
+				this.chatPositionConfig =
+					config.position.mobileEnabled && config.position.mobile
+						? {
+								default: config.position.desktop,
+								mobile: config.position.mobile,
+							}
+						: config.position.desktop;
+			}
+			debugLog('[TrackingPixelSDK] Widget config de Console aplicada', config);
+		} catch (error) {
+			debugLog('[TrackingPixelSDK] Widget config remota omitida, usando defaults', error);
 		}
 	}
 
