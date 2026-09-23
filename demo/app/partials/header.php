@@ -9,14 +9,28 @@
   <meta name="description" content="Guiders SDK: Seguimiento avanzado, análisis en tiempo real y chat integrado para aplicaciones web modernas.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
   
+  <?php
+    $guidersHost = strtolower(preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost'));
+    $guidersIsRemote = $guidersHost === 'guiders-demo.ancoradual.com';
+    $guidersApiKey = $guidersIsRemote
+      ? hash('sha256', $guidersHost)
+      : '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0';
+    $guidersEndpoint = $guidersIsRemote
+      ? 'https://guiders-api.ancoradual.com/api'
+      : 'http://localhost:3000/api';
+    $guidersWs = $guidersIsRemote
+      ? 'https://guiders-api.ancoradual.com'
+      : 'ws://localhost:3000';
+    $guidersEnv = $guidersIsRemote ? 'production' : 'development';
+  ?>
   <!-- Configuración de Guiders SDK -->
   <script>
     window.GUIDERS_CONFIG = {
-      apiKey: '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0',
-      environment: 'development',
-      dev: true,
-      endpoint: 'http://localhost:3000/api',
-      webSocketEndpoint: 'ws://localhost:3000',
+      apiKey: <?php echo json_encode($guidersApiKey); ?>,
+      environment: <?php echo json_encode($guidersEnv); ?>,
+      dev: <?php echo $guidersIsRemote ? 'false' : 'true'; ?>,
+      endpoint: <?php echo json_encode($guidersEndpoint); ?>,
+      webSocketEndpoint: <?php echo json_encode($guidersWs); ?>,
       requireConsent: false, // ✅ Consentimiento DESACTIVADO - SDK funciona sin barreras GDPR
       consentBanner: {
         enabled: false        // ✅ Banner de consentimiento DESACTIVADO
@@ -116,15 +130,18 @@
     requiring webpack-dev-server to be up.
   -->
   <?php
-    $guidersDevSrc  = 'http://127.0.0.1:8081/index.js?dev=true';
     $guidersStaticSrc = '/guiders-sdk.js?v=' . time();
-    $guidersApiKey  = '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0';
-    // Probe webpack-dev-server with a 250ms timeout so the page never stalls.
-    $ctx = stream_context_create(['http' => ['timeout' => 0.25, 'method' => 'HEAD']]);
-    $devUp = @file_get_contents('http://127.0.0.1:8081/index.js', false, $ctx);
-    $guidersSrc = ($devUp !== false) ? $guidersDevSrc : $guidersStaticSrc;
+    $guidersSrc = $guidersStaticSrc;
+    if (!$guidersIsRemote) {
+      $guidersDevSrc = 'http://127.0.0.1:8081/index.js?dev=true';
+      $ctx = stream_context_create(['http' => ['timeout' => 0.25, 'method' => 'HEAD']]);
+      $devUp = @file_get_contents('http://127.0.0.1:8081/index.js', false, $ctx);
+      if ($devUp !== false) {
+        $guidersSrc = $guidersDevSrc;
+      }
+    }
   ?>
-  <script src="<?php echo $guidersSrc; ?>" data-api-key="<?php echo $guidersApiKey; ?>"></script>
+  <script src="<?php echo htmlspecialchars($guidersSrc, ENT_QUOTES, 'UTF-8'); ?>" data-api-key="<?php echo htmlspecialchars($guidersApiKey, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
   <!-- Producción (S3): -->
   <!-- <script src="https://guiders-sdk.s3.eu-north-1.amazonaws.com/0.0.1/index.js" data-api-key="ea0cb2d33e9a186906747071e88a1a1eb1c219a0189f0344c7d87e2c497bf626"></script> -->
