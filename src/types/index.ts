@@ -85,6 +85,9 @@ export interface MessageSystemData {
 
 export type LeadCaptureStepType = 'message' | 'choice' | 'text';
 
+/** Cierre del guion sin el formulario de contacto. `null` sigue pidiendo datos. */
+export const LEAD_CAPTURE_END = '__end__';
+
 export interface LeadCaptureOption {
 	id: string;
 	label: string;

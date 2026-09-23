@@ -3,7 +3,7 @@
  * Plugin Name: Guiders SDK
  * Plugin URI: https://guiders-console.ancoradual.com
  * Description: Instala el pixel de Guiders en WordPress (tracking y chat). El chat se configura en Console, no en este plugin.
- * Version: 2.14.1
+ * Version: 2.14.2
  * Author: Guiders
  * Author URI: https://guiders-console.ancoradual.com
  * License: ISC
@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('GUIDERS_WP_PLUGIN_VERSION', '2.14.1');
+define('GUIDERS_WP_PLUGIN_VERSION', '2.14.2');
 define('GUIDERS_WP_PLUGIN_PLUGIN_FILE', __FILE__);
 define('GUIDERS_WP_PLUGIN_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GUIDERS_WP_PLUGIN_PLUGIN_URL', plugin_dir_url(__FILE__));

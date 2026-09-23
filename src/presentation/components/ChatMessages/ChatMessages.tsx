@@ -177,7 +177,10 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
                 lastDateKey = captureKey;
             }
             nodes.push(
-                <ThanksCard key={messageKey(msg, idx)} />
+                <ThanksCard
+                    key={messageKey(msg, idx)}
+                    withoutContact={contactAction === 'lead_capture_closed'}
+                />
             );
             return;
         }

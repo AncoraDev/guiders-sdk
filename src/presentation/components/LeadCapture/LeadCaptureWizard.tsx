@@ -18,6 +18,7 @@ import {
     LeadCaptureProgress,
     LeadCaptureStep,
     ContactFormLegalSnapshot,
+    LEAD_CAPTURE_END,
 } from '../../../types';
 import {
     actionsRowStyle,
@@ -79,13 +80,13 @@ const OPTION_FEEDBACK_MS = 160;
 
 /** El mensaje del backend deja constancia de que la captación ya se completó. */
 export function isLeadCaptureMessage(action?: string): boolean {
-    return action === 'lead_capture_submission';
+    return action === 'lead_capture_submission' || action === 'lead_capture_closed';
 }
 
 /**
- * Asistente que guía al visitante hasta dejar sus datos cuando no hay ningún
- * comercial conectado. El paso final siempre pide los datos de contacto y el
- * consentimiento, así que un guion mal montado nunca produce un lead inservible.
+ * Asistente que guía al visitante cuando no hay ningún comercial conectado.
+ * Una rama puede pedir datos de contacto (`next` vacío) o cerrarse sin
+ * formulario (`__end__`).
  *
  * Dónde se pinta lo decide `leadCaptureModeSignal`:
  * - `offer`: una tarjeta al final del hilo para empezar o reanudar.
@@ -209,13 +210,27 @@ export function LeadCaptureWizard({ centered = false }: { centered?: boolean } =
                 answers={current.answers}
                 cardStyle={cardStyle}
                 position={trail.length + 1}
-                total={trail.length + stepsAhead(flow, step.id) + 1}
+                total={trail.length + stepsAhead(flow, step.id)}
                 onBack={goBack}
                 onAnswer={(answer, nextStepId) => {
                     const answers = answer
                         ? [...current.answers.filter((a) => a.stepId !== answer.stepId), answer]
                         : current.answers;
                     const nextTrail = [...trail, step.id];
+                    if (nextStepId === LEAD_CAPTURE_END) {
+                        messagesSignal.value = [
+                            ...messagesSignal.value,
+                            {
+                                id: `lead-capture-closed-${Date.now()}`,
+                                text: '',
+                                sender: 'system',
+                                timestamp: Date.now(),
+                                systemData: { action: 'lead_capture_closed' },
+                            },
+                        ];
+                        advance({ phase: 'done', stepId: null, answers, trail: nextTrail });
+                        return;
+                    }
                     advance(
                         nextStepId
                             ? { phase: 'steps', stepId: nextStepId, answers, trail: nextTrail }
@@ -259,10 +274,11 @@ function stepsAhead(
         step.type === 'choice'
             ? (step.options ?? []).map((option) => option.next)
             : [step.next];
-    const deepest = exits.reduce(
-        (max, next) => Math.max(max, stepsAhead(flow, next, nextVisited)),
-        0
-    );
+    const deepest = exits.reduce((max, next) => {
+        if (!next) return Math.max(max, 1);
+        if (next === LEAD_CAPTURE_END) return Math.max(max, 0);
+        return Math.max(max, stepsAhead(flow, next, nextVisited));
+    }, 0);
     return 1 + deepest;
 }
 
@@ -348,7 +364,13 @@ function BackButton({ onBack }: { onBack?: () => void }) {
 }
 
 /** Cierre del guion: se pinta en el sitio del mensaje de envío. */
-export function ThanksCard({ centered = false }: { centered?: boolean }) {
+export function ThanksCard({
+    centered = false,
+    withoutContact = false,
+}: {
+    centered?: boolean;
+    withoutContact?: boolean;
+}) {
     return (
         <div
             class="guiders-lead-capture"
@@ -356,10 +378,13 @@ export function ThanksCard({ centered = false }: { centered?: boolean }) {
             role="status"
         >
             <span style={doneCheckStyle} aria-hidden="true">✓</span>
-            <p style={titleStyle}>Ya está, tenemos tus datos</p>
+            <p style={titleStyle}>
+                {withoutContact ? 'Listo, gracias' : 'Ya está, tenemos tus datos'}
+            </p>
             <p style={doneHintStyle}>
-                Un asesor revisará lo que nos has contado y te escribirá el
-                próximo día laborable con una respuesta concreta.
+                {withoutContact
+                    ? 'Cuando haya un asesor disponible podrás seguir la conversación. No hemos pedido tus datos.'
+                    : 'Un asesor revisará lo que nos has contado y te escribirá el próximo día laborable con una respuesta concreta.'}
             </p>
         </div>
     );

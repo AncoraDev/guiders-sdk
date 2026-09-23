@@ -54,7 +54,9 @@ export const leadCaptureResumeSignal = signal<LeadCaptureProgress | null>(null);
 export const leadCaptureCompletedSignal = computed<boolean>(() => {
     if (leadCaptureStatusSignal.value === 'completed') return true;
     return messagesSignal.value.some(
-        (msg) => msg.systemData?.action === 'lead_capture_submission'
+        (msg) =>
+            msg.systemData?.action === 'lead_capture_submission' ||
+            msg.systemData?.action === 'lead_capture_closed'
     );
 });
 
