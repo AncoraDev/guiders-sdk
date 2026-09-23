@@ -550,7 +550,7 @@ export class TrackingPixelSDK {
 
 		// La identificación del visitante ahora se realiza solo cuando se abre la pestaña
 		// mediante un listener de visibilitychange/focus
-		this.setupTabOpenListener();
+		await this.setupTabOpenListener();
 		await this.applyRemoteWidgetConfig();
 		// Guardar la referencia al chat para usarla más tarde (ej: mostrar mensajes del sistema)
 		this.chatUI = new ChatUI({
@@ -1318,7 +1318,7 @@ export class TrackingPixelSDK {
 	 * Configura un listener para detectar cuando se abre una pestaña
 	 * y ejecutar /identify únicamente en ese momento.
 	 */
-	private setupTabOpenListener(): void {
+	private async setupTabOpenListener(): Promise<void> {
 		if (typeof window === 'undefined') return;
 
 		debugLog('[TrackingPixelSDK] 🔍 Configurando listener para apertura de pestaña (una sola vez)');
@@ -1327,7 +1327,7 @@ export class TrackingPixelSDK {
 		// No en eventos posteriores de cambio de foco
 		if (document.visibilityState === 'visible') {
 			debugLog('[TrackingPixelSDK] 🚀 Pestaña cargada - ejecutando identify una sola vez');
-			this.executeIdentify();
+			await this.executeIdentify();
 		} else {
 			// Si la página se carga en segundo plano, esperar a que se haga visible
 			debugLog('[TrackingPixelSDK] ⏳ Pestaña en segundo plano - esperando visibilidad');
@@ -1350,6 +1350,25 @@ export class TrackingPixelSDK {
 		// NO agregar listeners adicionales para visibilitychange o focus
 		// La sesión debe mantenerse durante toda la vida de la pestaña
 		// Solo se debe crear una nueva sesión cuando se abre una nueva pestaña/ventana
+	}
+
+	/**
+	 * PAGE_VIEW tras identify, cuando ya hay visitorId y sessionId.
+	 */
+	private trackPageViewAfterIdentify(): void {
+		if (typeof window === 'undefined') {
+			return;
+		}
+		try {
+			void this.track({
+				event: 'page_view',
+				url: window.location.href,
+				title: document.title,
+			});
+			debugLog('[TrackingPixelSDK] 📄 page_view emitido tras identify:', window.location.href);
+		} catch (error) {
+			debugLog('[TrackingPixelSDK] ⚠️ No se pudo emitir page_view tras identify:', error);
+		}
 	}
 
 	/**
@@ -1384,6 +1403,8 @@ export class TrackingPixelSDK {
 					this.consentBackendService.setSessionId(sessionId);
 					debugLog('[TrackingPixelSDK] 🔐 SessionId configurado en ConsentBackendService');
 				}
+
+				this.trackPageViewAfterIdentify();
 
 				// 📬 Inicializar servicio de mensajes no leídos con badge tempranamente
 				// Esto asegura que el badge se actualice correctamente al refrescar la página
