@@ -13,7 +13,7 @@
  *   - ConsentBanner appears when consent state is `pending` and the
  *     accept/deny actions transition the banner away
  *   - OfflineBanner reacts to `navigator.onLine = false` (CDP)
- *   - ChatListView renders selector items when there are chats
+ *   - ChatWidget opens the single thread (no chat list)
  *
  * Two scenarios were intentionally **not** included here:
  *   - QuickActions click → `sendMessageCallbackSignal` dispatch
@@ -167,27 +167,15 @@ test.describe('Preact components — smoke tests', () => {
         // proves the OfflineBanner component is wired to its signals.
     });
 
-    test('ChatListView OR ChatWidget content renders when chat is opened', async ({ page }) => {
+    test('ChatWidget opens the single thread when chat is opened', async ({ page }) => {
         await gotoDemo(page);
 
-        // Open the widget so the list view (or single chat view) is mounted.
         await page.evaluate(() => (window as any).guiders.showChat());
         await page.waitForTimeout(400);
 
-        // Either a list view OR a single chat view is rendered depending
-        // on the visitor's chat history. We assert that at least one of
-        // the canonical Preact components is present, proving the
-        // migration path is wired up.
-        const listView = shadow(page, '.guiders-chat-list-view');
         const chatWidget = shadow(page, '.chat-widget-fixed');
-
-        const listCount = await listView.count();
-        const widgetCount = await chatWidget.count();
-        expect(listCount + widgetCount).toBeGreaterThan(0);
-
-        if (listCount > 0) {
-            // When list view is rendered it must include the "new chat" CTA.
-            await expect(listView.locator('.guiders-chat-list-new-chat').first()).toBeVisible();
-        }
+        await expect(chatWidget).toHaveCount(1);
+        await expect(shadow(page, '.guiders-chat-list-view')).toHaveCount(0);
+        await expect(shadow(page, '.chat-back-btn')).toHaveCount(0);
     });
 });

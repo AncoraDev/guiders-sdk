@@ -5,7 +5,7 @@
  *   #25 (Chunk 2): extracted named aliases (`ConsentBannerStyle`,
  *        `ConsentBannerPosition`, `ConsentBannerColors`) and added a resolved
  *        `InternalConsentBannerConfig` shape mirroring the two-tier pattern
- *        already used by `chat-selector-types.ts` and `quick-actions-types.ts`.
+ *        already used by `quick-actions-types.ts`.
  *        All fields marked `readonly` for consistency with #21.
  *   #24 (Chunk 2): added field-level JSDoc documenting defaults and valid
  *        combinations. Defaults reflect intent — they should be reconciled

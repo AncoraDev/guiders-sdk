@@ -591,31 +591,14 @@ class GuidersAdmin {
         }
         $validated['ai_show_typing_indicator'] = isset($input['ai_show_typing_indicator']) ? $validateCheckbox($input['ai_show_typing_indicator']) : true;
 
-        // Validate Chat Selector settings
-        $validated['chat_selector_enabled'] = isset($input['chat_selector_enabled']) ? $validateCheckbox($input['chat_selector_enabled']) : false;
-        if (isset($input['chat_selector_new_chat_label'])) {
-            $validated['chat_selector_new_chat_label'] = sanitize_text_field($input['chat_selector_new_chat_label']);
-        }
-        if (isset($input['chat_selector_new_chat_emoji'])) {
-            $validated['chat_selector_new_chat_emoji'] = sanitize_text_field($input['chat_selector_new_chat_emoji']);
-        }
-        if (isset($input['chat_selector_max_chats'])) {
-            $max_chats = intval($input['chat_selector_max_chats']);
-            $validated['chat_selector_max_chats'] = max(1, min(50, $max_chats));
-        }
-        if (isset($input['chat_selector_empty_message'])) {
-            $validated['chat_selector_empty_message'] = sanitize_text_field($input['chat_selector_empty_message']);
-        }
-
-        // Chat, horarios, QA e IA ya no se configuran en WP. Un Guardar en
-        // General no debe reactivar basura de la pestaña Chat antigua.
+        // Chat, horarios, QA, selector e IA ya no se configuran en WP.
         $validated['chat_enabled'] = true;
         $validated['auto_open_chat_on_message'] = true;
         $validated['active_hours_enabled'] = false;
         $validated['commercial_availability_enabled'] = false;
         $validated['quick_actions_enabled'] = false;
         $validated['ai_enabled'] = false;
-        $validated['chat_selector_enabled'] = true;
+        $validated['chat_selector_enabled'] = false;
         $validated['consent_banner_enabled'] = false;
         $validated['require_consent'] = false;
         $validated['wp_consent_api_sync_enabled'] = false;
@@ -1443,72 +1426,6 @@ class GuidersAdmin {
 
         echo '<input type="checkbox" id="ai_show_typing_indicator" name="guiders_wp_plugin_settings[ai_show_typing_indicator]" value="1" ' . checked($show, true, false) . ' />';
         echo '<label for="ai_show_typing_indicator">' . __('Mostrar indicador "IA está escribiendo..." mientras genera respuesta', 'guiders-wp-plugin') . '</label>';
-    }
-
-    // === Chat Selector Field Callbacks ===
-
-    /**
-     * Chat Selector section callback
-     */
-    public function chatSelectorSectionCallback() {
-        echo '<p>' . __('Configure el selector de conversaciones para permitir a los visitantes gestionar múltiples chats.', 'guiders-wp-plugin') . '</p>';
-        echo '<p class="description">' . __('El selector aparece en el encabezado del chat y permite cambiar entre conversaciones o iniciar una nueva.', 'guiders-wp-plugin') . '</p>';
-    }
-
-    /**
-     * Chat Selector enabled field callback
-     */
-    public function chatSelectorEnabledFieldCallback() {
-        $settings = get_option('guiders_wp_plugin_settings', array());
-        $enabled = isset($settings['chat_selector_enabled']) ? $settings['chat_selector_enabled'] : false;
-
-        echo '<input type="checkbox" id="chat_selector_enabled" name="guiders_wp_plugin_settings[chat_selector_enabled]" value="1" ' . checked($enabled, true, false) . ' />';
-        echo '<label for="chat_selector_enabled">' . __('Habilitar selector de conversaciones', 'guiders-wp-plugin') . '</label>';
-        echo '<p class="description">' . __('Si está activado, los visitantes podrán ver y cambiar entre sus conversaciones anteriores.', 'guiders-wp-plugin') . '</p>';
-    }
-
-    /**
-     * Chat Selector new chat label field callback
-     */
-    public function chatSelectorNewChatLabelFieldCallback() {
-        $settings = get_option('guiders_wp_plugin_settings', array());
-        $label = isset($settings['chat_selector_new_chat_label']) ? $settings['chat_selector_new_chat_label'] : 'Nueva conversación';
-
-        echo '<input type="text" id="chat_selector_new_chat_label" name="guiders_wp_plugin_settings[chat_selector_new_chat_label]" value="' . esc_attr($label) . '" class="regular-text" />';
-        echo '<p class="description">' . __('Texto del botón para iniciar una nueva conversación.', 'guiders-wp-plugin') . '</p>';
-    }
-
-    /**
-     * Chat Selector new chat emoji field callback
-     */
-    public function chatSelectorNewChatEmojiFieldCallback() {
-        $settings = get_option('guiders_wp_plugin_settings', array());
-        $emoji = isset($settings['chat_selector_new_chat_emoji']) ? $settings['chat_selector_new_chat_emoji'] : '+';
-
-        echo '<input type="text" id="chat_selector_new_chat_emoji" name="guiders_wp_plugin_settings[chat_selector_new_chat_emoji]" value="' . esc_attr($emoji) . '" style="width: 60px; text-align: center; font-size: 18px;" />';
-        echo '<p class="description">' . __('Emoji o símbolo para el botón de nueva conversación. Ejemplos: + ✨ 💬 📝', 'guiders-wp-plugin') . '</p>';
-    }
-
-    /**
-     * Chat Selector max chats field callback
-     */
-    public function chatSelectorMaxChatsFieldCallback() {
-        $settings = get_option('guiders_wp_plugin_settings', array());
-        $max_chats = isset($settings['chat_selector_max_chats']) ? $settings['chat_selector_max_chats'] : 10;
-
-        echo '<input type="number" id="chat_selector_max_chats" name="guiders_wp_plugin_settings[chat_selector_max_chats]" value="' . esc_attr($max_chats) . '" min="1" max="50" />';
-        echo '<p class="description">' . __('Número máximo de conversaciones a mostrar en el selector (1-50).', 'guiders-wp-plugin') . '</p>';
-    }
-
-    /**
-     * Chat Selector empty message field callback
-     */
-    public function chatSelectorEmptyMessageFieldCallback() {
-        $settings = get_option('guiders_wp_plugin_settings', array());
-        $message = isset($settings['chat_selector_empty_message']) ? $settings['chat_selector_empty_message'] : 'No hay conversaciones anteriores';
-
-        echo '<input type="text" id="chat_selector_empty_message" name="guiders_wp_plugin_settings[chat_selector_empty_message]" value="' . esc_attr($message) . '" class="regular-text" />';
-        echo '<p class="description">' . __('Mensaje que se muestra cuando no hay conversaciones previas.', 'guiders-wp-plugin') . '</p>';
     }
 
     // === Tracking V2 Field Callbacks ===

@@ -6,18 +6,15 @@
  *
  *   1. `useCommercialPresenceWebSocket()` — subscribes to `presence:changed`.
  *      Must stay mounted at the WIDGET ROOT level (always alive while the
- *      widget exists) so updates that arrive while the chat list view is
- *      hidden are not lost.
+ *      widget exists) so updates are not lost while the panel is closed.
  *
  *   2. `useCommercialPresenceSeed({ chatIds })` — performs lazy REST
  *      `getChatPresence(chatId)` calls to seed the map for chats whose
- *      commercial isn't yet known. Mounted at the chat-list view level — only
- *      runs while the list is actually visible (avoids fetches for chats the
- *      user never sees).
+ *      commercial isn't yet known. Optional; used if a surface lists chats.
  *
  *   3. `useCommercialPresenceMap({ chatIds })` — convenience wrapper that
  *      composes both. Kept for backward compatibility with the original
- *      single-call API used by `ChatListView`.
+ *      single-call API.
  *
  * Why a per-commercial map instead of per-chat?
  *   - A single commercial may be assigned to multiple chats. Storing the

@@ -10,7 +10,6 @@ import { ChatV2, ResolvedLeadCaptureFlow } from '../../types';
 import { debugLog, debugWarn, debugError } from '../../utils/debug-logger';
 import {
     isVisibleSignal,
-    isShowingChatListSignal,
     chatIdSignal,
     visitorIdSignal,
     isLoadingInitialMessagesSignal,
@@ -24,12 +23,10 @@ import {
     lastManualCloseTimestampSignal,
     AUTO_OPEN_BLOCK_MS,
     chatSwitchRequestSignal,
-    newChatRequestSignal,
     quickActionSendMessageSignal,
     quickActionRequestAgentSignal,
     trackQuickActionSignal,
     chatInitializedSignal,
-    chatSelectorEnabledSignal,
     leadCaptureFlowSignal,
     leadCaptureOwnsThreadSignal,
     supportOnlineSignal,
@@ -83,7 +80,6 @@ export class ChatUIBridge {
     // -------------------------------------------------------------------------
 
     private _onChatSwitch: ((chatId: string) => Promise<void>) | null = null;
-    private _onNewChatRequest: (() => Promise<void>) | null = null;
     private _onQuickActionSendMessage: ((message: string, metadata?: Record<string, unknown>) => Promise<void>) | null = null;
     private _onQuickActionRequestAgent: (() => Promise<void>) | null = null;
     private _onTrackQuickAction: ((data: Record<string, unknown>) => void) | null = null;
@@ -98,13 +94,6 @@ export class ChatUIBridge {
     }
     set onChatSwitch(value: ((chatId: string) => Promise<void>) | null) {
         this._onChatSwitch = value;
-    }
-
-    get onNewChatRequest(): (() => Promise<void>) | null {
-        return this._onNewChatRequest;
-    }
-    set onNewChatRequest(value: (() => Promise<void>) | null) {
-        this._onNewChatRequest = value;
     }
 
     get onQuickActionSendMessage(): ((message: string, metadata?: Record<string, unknown>) => Promise<void>) | null {
@@ -131,11 +120,6 @@ export class ChatUIBridge {
     constructor(options: ChatUIOptions = {}) {
         this._options = options;
         this._resolvedPosition = resolvePosition(options.position, options.mobileDetection);
-
-        // Seed chatSelectorEnabled from static options so the header shows correctly on first render
-        if (options.chatSelector?.enabled) {
-            chatSelectorEnabledSignal.value = true;
-        }
 
         // Patch #13: seed configurable UI texts from options at construction time
         // so the first render already reflects the consumer's overrides.
@@ -191,15 +175,6 @@ export class ChatUIBridge {
             if (chatId !== null) {
                 chatSwitchRequestSignal.value = null;
                 this._onChatSwitch?.(chatId).catch((err) => debugError('[ChatUIBridge] onChatSwitch failed:', err));
-            }
-        }));
-
-        let prevNewChatPulse = newChatRequestSignal.peek();
-        this._disposers.push(effect(() => {
-            const pulse = newChatRequestSignal.value;
-            if (pulse !== prevNewChatPulse) {
-                prevNewChatPulse = pulse;
-                this._onNewChatRequest?.().catch((err) => debugError('[ChatUIBridge] onNewChatRequest failed:', err));
             }
         }));
 
@@ -710,43 +685,12 @@ export class ChatUIBridge {
         return hasAssignedCommercialSignal.value;
     }
 
-    // -------------------------------------------------------------------------
-    // Chat list / selector — PREACT signals (Story 4.2)
-    // -------------------------------------------------------------------------
-
-    showChatListView(): void {
-        isShowingChatListSignal.value = true;
-    }
-
-    hideChatListView(): void {
-        isShowingChatListSignal.value = false;
-    }
-
     updateSelectedChat(chatId: string | null): void {
         if (chatId !== null) chatIdSignal.value = chatId;
     }
 
-    /**
-     * Fires the chat-switch signal — the SDK's effect handler will pick it up
-     * and load the new chat, exactly as when the user clicks from the chat list.
-     */
     async switchToChat(chatId: string): Promise<void> {
         chatSwitchRequestSignal.value = chatId;
-    }
-
-    /**
-     * Fires the new-chat-request pulse signal — the SDK's effect handler will
-     * create the chat and update state accordingly.
-     */
-    async createNewChat(): Promise<void> {
-        newChatRequestSignal.value = (newChatRequestSignal.value ?? 0) + 1;
-    }
-
-    /**
-     * Enables or disables the multi-chat selector (back button in the header).
-     */
-    setChatSelectorEnabled(enabled: boolean): void {
-        chatSelectorEnabledSignal.value = enabled;
     }
 
     // -------------------------------------------------------------------------

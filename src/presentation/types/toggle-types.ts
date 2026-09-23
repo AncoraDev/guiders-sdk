@@ -3,8 +3,7 @@
  *
  * Patch #28 (Chunk 2): moved `UnreadServiceConfig` here from
  * `signals/toggleState.ts`. The signals layer should declare state, not
- * types — same convention used by `chat-types.ts`, `chat-selector-types.ts`,
- * `quick-actions-types.ts`.
+ * types — same convention used by `chat-types.ts` and `quick-actions-types.ts`.
  */
 
 /**

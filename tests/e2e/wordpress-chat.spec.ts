@@ -365,20 +365,15 @@ test.describe('WordPress — SDK smoke tests', () => {
     });
 
     // ------------------------------------------------------------------ //
-    // 12. ChatListView OR single ChatWidget content renders on open
+    // 12. Single ChatWidget thread renders on open
     // ------------------------------------------------------------------ //
-    test('Chat content (list or single view) renders when opened', async ({ page }) => {
+    test('Chat content (single thread) renders when opened', async ({ page }) => {
         await gotoWP(page);
 
         await page.evaluate(() => (window as any).guiders.showChat());
         await page.waitForTimeout(500);
 
-        const listView   = shadow(page, '.guiders-chat-list-view');
-        const chatWidget = shadow(page, '.chat-widget-fixed');
-
-        const listCount   = await listView.count();
-        const widgetCount = await chatWidget.count();
-
-        expect(listCount + widgetCount).toBeGreaterThan(0);
+        await expect(shadow(page, '.chat-widget-fixed')).toHaveCount(1);
+        await expect(shadow(page, '.guiders-chat-list-view')).toHaveCount(0);
     });
 });

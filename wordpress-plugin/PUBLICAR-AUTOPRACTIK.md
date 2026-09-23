@@ -1,8 +1,8 @@
 # Publicar Guiders en autopractik.es
 
-El plugin **ya está** en https://autopractik.es (v2.13.3). Esta nota es para subir **2.14.0** sin FTP.
+El plugin **ya está** en https://autopractik.es (v2.14.0). Esta nota es para subir **2.14.1** sin FTP.
 
-Hoy ese site habla con `guiders.es`. 2.14.0 habla con `guiders-api.ancoradual.com`.
+2.14.1 quita el selector de chats del visitante y ata el hilo al widget. Sigue hablando con `guiders-api.ancoradual.com`.
 
 ## 1. ZIP
 
@@ -12,7 +12,7 @@ Desde `guiders-sdk`:
 bash wordpress-plugin/build-plugin.sh
 ```
 
-Sale `wordpress-plugin/guiders-wp-plugin-2.14.0.zip`.
+Sale `wordpress-plugin/guiders-wp-plugin-2.14.1.zip`.
 
 ## 2. En el admin de Autopractik
 

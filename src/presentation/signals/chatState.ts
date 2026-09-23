@@ -35,9 +35,6 @@ export const chatDetailSignal = signal<ChatV2 | null>(null);
 /** @writer bridge — last status received from the server. */
 export const lastKnownChatStatusSignal = signal<ChatStatus | null>(null);
 
-/** @writer bridge — whether the multi-chat selector is enabled (set via SDK option). */
-export const chatSelectorEnabledSignal = signal<boolean>(false);
-
 /** @writer bridge — timestamp of the last manual close (auto-open throttle). */
 export const lastManualCloseTimestampSignal = signal<number>(0);
 
@@ -47,9 +44,6 @@ export const lastManualCloseTimestampSignal = signal<number>(0);
 
 /** @writer bridge|ui — visibility of the chat panel (toggled by ToggleButton/ChatHeader). */
 export const isVisibleSignal = signal<boolean>(false);
-
-/** @writer bridge|ui — chat-list view visibility (toggled by ChatHeader/ChatListView). */
-export const isShowingChatListSignal = signal<boolean>(false);
 
 /** @writer bridge — pending message-create POST flag. */
 export const isCreatingChatSignal = signal<boolean>(false);

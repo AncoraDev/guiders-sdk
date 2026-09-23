@@ -4,7 +4,7 @@ Tags: analytics, chat, tracking, ecommerce, woocommerce, live-chat
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.14.0
+Stable tag: 2.14.1
 License: ISC
 License URI: https://opensource.org/licenses/ISC
 
@@ -86,7 +86,7 @@ El plugin sigue las mejores prácticas de WordPress:
 No está en wordpress.org. Se instala con el ZIP (sin FTP):
 
 1. En WordPress: **Plugins → Añadir nuevo → Subir plugin**
-2. Elige `guiders-wp-plugin-2.14.0.zip`
+2. Elige `guiders-wp-plugin-2.14.1.zip`
 3. Activa **Guiders SDK** (si ya lo tenías, WordPress ofrece reemplazar)
 4. **Ajustes → Guiders SDK**: API key + entorno `production`
 5. Chat, color y posición: **Console → Configuración → Chat web**
@@ -132,6 +132,10 @@ El plugin respeta las configuraciones de privacidad. Consulta la documentación 
 5. Dashboard de analytics en Guiders
 
 == Changelog ==
+
+= 2.14.1 =
+* Un solo hilo de chat (sin selector ni «Nueva conversación»). Los días se separan como en WhatsApp.
+* Identify espera a tener el widget antes de reutilizar el chat abierto (evita hilo sin chatId).
 
 = 2.14.0 =
 * El plugin solo instala el pixel (API key, entorno, tracking). Chat, tema y posición salen de Console.

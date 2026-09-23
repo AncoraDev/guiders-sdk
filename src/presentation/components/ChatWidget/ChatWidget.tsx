@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { effect } from '@preact/signals-core';
 import { ChatUIOptions, QuickActionsConfig } from '../../types/chat-types';
 import { ResolvedPosition } from '../../../utils/position-resolver';
-import { isVisibleSignal, isShowingChatListSignal } from '../../signals';
+import { isVisibleSignal } from '../../signals';
 import {
     toggleResolvedPositionSignal,
     toggleClickedSignal,
@@ -18,7 +18,6 @@ import { ChatInput } from '../ChatInput';
 import { OfflineBanner } from '../OfflineBanner';
 import { QuickActions } from '../QuickActions';
 import { DEFAULT_EMPTY_STATE_BODY } from '../ChatEmptyState';
-import { ChatListView } from '../ChatListView';
 import { ToggleButton } from '../ToggleButton';
 import { usePresence } from '../../hooks/usePresence';
 import { useCommercialPresenceWebSocket } from '../../hooks/useCommercialPresenceMap';
@@ -62,16 +61,12 @@ function resolveQuickActionsConfig(options: ChatWidgetOptions): QuickActionsConf
  */
 export function ChatWidget({ options }: ChatWidgetProps) {
     const visible = isVisibleSignal.value;
-    const isShowingList = isShowingChatListSignal.value;
     const quickActionsConfig = resolveQuickActionsConfig(options);
 
     // Subscribe to PresenceService updates
     usePresence();
 
-    // Subscribe to commercial presence WS updates at the WIDGET ROOT so events
-    // are not lost while the chat list view is hidden. Mounting this in
-    // ChatListView would lose updates received while the user is in a chat
-    // (or with the widget closed).
+    // Subscribe to commercial presence WS updates at the widget root.
     useCommercialPresenceWebSocket();
 
     // Patch #23: when the widget is hidden, mark its subtree as `inert` so
@@ -263,19 +258,12 @@ export function ChatWidget({ options }: ChatWidgetProps) {
                 />
                 <ChatHeader options={options} />
                 <OfflineBanner />
-                {isShowingList
-                    ? <ChatListView />
-                    : (
-                        <>
-                            <ChatMessages welcomeMessage={quickActionsConfig.welcomeMessage} />
-                            {quickActionsConfig.enabled &&
-                                quickActionsConfig.buttons.length > 0 && (
-                                <QuickActions config={quickActionsConfig} />
-                            )}
-                            <ChatInput />
-                        </>
-                    )
-                }
+                <ChatMessages welcomeMessage={quickActionsConfig.welcomeMessage} />
+                {quickActionsConfig.enabled &&
+                    quickActionsConfig.buttons.length > 0 && (
+                    <QuickActions config={quickActionsConfig} />
+                )}
+                <ChatInput />
             </div>
         </div>
         </>

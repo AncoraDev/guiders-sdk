@@ -2,9 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { ChatUIOptions } from '../../types/chat-types';
 import {
     chatDetailSignal,
-    chatSelectorEnabledSignal,
     hasAssignedCommercialSignal,
-    isShowingChatListSignal,
     assignedPresenceStatusSignal,
     presenceStatusSignal,
     visitorIdSignal,
@@ -45,7 +43,6 @@ export function ChatHeader({ options }: ChatHeaderProps) {
     const assignedPresence = assignedPresenceStatusSignal.value;
     const supportOnline = presenceStatusSignal.value !== 'offline';
     const leadCaptureOwnsThread = leadCaptureOwnsThreadSignal.value;
-    const showBackBtn = chatSelectorEnabledSignal.value || !!(options.chatSelector?.enabled);
     const title = options.title ?? 'Atención al usuario';
     const visitorHint = getVisitorTestHint(visitorIdSignal.value);
 
@@ -105,18 +102,6 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                         ? 'Chat — sin agentes disponibles'
                         : 'Chat'}
         >
-            {showBackBtn && (
-                <button
-                    class="chat-back-btn"
-                    aria-label="Volver"
-                    onClick={() => { isShowingChatListSignal.value = true; }}
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                </button>
-            )}
-
             <div
                 class="chat-header-main"
                 style={{

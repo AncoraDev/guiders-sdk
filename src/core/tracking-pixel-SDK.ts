@@ -45,7 +45,6 @@ import { RealtimeMessageManager } from "../services/realtime-message-manager";
 import { ConsentManager, ConsentManagerConfig, ConsentState } from "./consent-manager";
 import { ConsentBackendService } from "../services/consent-backend-service";
 import { QuickActionsConfig } from "../presentation/types/quick-actions-types";
-import { ChatSelectorConfig } from "../presentation/types/chat-selector-types";
 import { debugLog } from "../utils/debug-logger";
 import { CommercialAvailabilityService } from "../services/commercial-availability-service";
 import { LeadCaptureFlowService } from "../services/lead-capture-flow-service";
@@ -114,8 +113,6 @@ interface SDKOptions {
 	quickActions?: Partial<QuickActionsConfig>;
 	// AI Configuration (display options for AI-generated messages)
 	ai?: Partial<AIConfig>;
-	// Chat Selector Configuration (manage multiple conversations)
-	chatSelector?: Partial<ChatSelectorConfig>;
 	/**
 	 * Theme for the chat widget UI.
 	 * Built-in: 'default' (slate/white) | 'carbon' (Vercel-style true blacks).
@@ -203,17 +200,12 @@ export class TrackingPixelSDK {
 	private autoOpenChatOnMessage: boolean = true;
 	private quickActionsConfig?: Partial<QuickActionsConfig>;
 	private aiConfig?: Partial<AIConfig>;
-	private chatSelectorConfig?: Partial<ChatSelectorConfig>;
 	private themeId?: string;
 	private chatEnabled = true;
 	private colorSchemeOverride?: 'dark' | 'light' | 'system';
-	// Flag para indicar que el usuario quiere crear un nuevo chat
-	// Se establece en true cuando se pulsa "Nueva conversación"
-	// Se usa para forzar la creación de chat nuevo en Quick Actions
-	private pendingNewChat: boolean = false;
 
 	constructor(options: SDKOptions) {
-		console.log('🚀 [TrackingPixelSDK] Constructor llamado con chatSelector:', options.chatSelector);
+		console.log('🚀 [TrackingPixelSDK] Constructor llamado');
 
 		const defaults = resolveDefaultEndpoints();
 		const endpoint = options.endpoint || defaults.endpoint;
@@ -262,12 +254,6 @@ export class TrackingPixelSDK {
 		this.aiConfig = options.ai;
 		if (this.aiConfig) {
 			debugLog('[TrackingPixelSDK] 🤖 Configuración de IA:', this.aiConfig);
-		}
-
-		// 📋 Configurar Chat Selector (múltiples conversaciones)
-		this.chatSelectorConfig = options.chatSelector;
-		if (this.chatSelectorConfig?.enabled) {
-			debugLog('[TrackingPixelSDK] 📋 Configuración de Chat Selector:', this.chatSelectorConfig);
 		}
 
 		// 🎨 Theme
@@ -548,9 +534,9 @@ export class TrackingPixelSDK {
 
 		debugLog("SDK listo para tracking...");
 
-		// La identificación del visitante ahora se realiza solo cuando se abre la pestaña
-		// mediante un listener de visibilitychange/focus
-		await this.setupTabOpenListener();
+		// ChatUI debe existir antes de identify: executeIdentify reutiliza el
+		// chat abierto con setChatId. Si identify corre antes, el widget abre
+		// sin chatId y Console no ve el hilo.
 		await this.applyRemoteWidgetConfig();
 		// Guardar la referencia al chat para usarla más tarde (ej: mostrar mensajes del sistema)
 		this.chatUI = new ChatUI({
@@ -561,8 +547,6 @@ export class TrackingPixelSDK {
 			quickActions: this.quickActionsConfig,
 			// 🤖 Configuración de IA para renderizado de mensajes
 			ai: this.aiConfig,
-			// 📋 Configuración del selector de chats
-			chatSelector: this.chatSelectorConfig,
 			// 🎨 Theme
 			theme: this.themeId,
 			// 🌓 Color-scheme override
@@ -571,9 +555,7 @@ export class TrackingPixelSDK {
 
 		// Configurar callbacks de Quick Actions
 		this.setupQuickActionsCallbacks();
-
-		// Configurar callbacks de Chat Selector
-		this.setupChatSelectorCallbacks();
+		await this.setupTabOpenListener();
 		const chat = this.chatUI; // Alias para mantener compatibilidad con el código existente
 		// ChatInputUI removed — onSubmit is handled via ChatUIBridge.onSubmit → signal
 		// Toggle button is now managed by Preact via ChatUIBridge
@@ -980,42 +962,24 @@ export class TrackingPixelSDK {
 		this.chatUI.onQuickActionSendMessage = async (message: string, metadata?: Record<string, any>) => {
 			// DEBUG: Log siempre visible en consola para diagnóstico
 			console.log('[GUIDERS DEBUG] Quick Action: enviando mensaje', message);
-			console.log('[GUIDERS DEBUG] 🚩 pendingNewChat =', this.pendingNewChat);
 
 			const currentChatId = this.realtimeMessageManager.getCurrentChatId();
 			const chatUIChatId = this.chatUI?.getChatId();
 			console.log('[GUIDERS DEBUG] currentChatId (realtimeManager) =', currentChatId);
 			console.log('[GUIDERS DEBUG] chatUIChatId =', chatUIChatId);
 
-			// IMPORTANTE: Determinar si debemos crear un nuevo chat.
-			// Usamos múltiples señales para ser más robustos:
-			// 1. pendingNewChat - flag explícito establecido cuando se pulsa "Nueva conversación"
-			// 2. chatUIChatId vacío - indica que el UI no tiene chat activo
-			// 3. currentChatId vacío - indica que el manager no tiene chat activo
 			const noChatIdInUI = !chatUIChatId || chatUIChatId === '';
 			const noChatIdInManager = !currentChatId || currentChatId === '';
-			const shouldCreateNewChat = this.pendingNewChat || noChatIdInUI || noChatIdInManager;
+			const shouldCreateChat = noChatIdInUI || noChatIdInManager;
 
-			console.log('[GUIDERS DEBUG] shouldCreateNewChat =', shouldCreateNewChat, {
-				pendingNewChat: this.pendingNewChat,
-				noChatIdInUI,
-				noChatIdInManager
-			});
-
-			if (!shouldCreateNewChat && currentChatId) {
-				// Hay chat activo Y NO queremos crear uno nuevo - enviar mensaje normalmente
+			if (!shouldCreateChat && currentChatId) {
 				debugLog('[TrackingPixelSDK] Chat activo encontrado, enviando mensaje via realtimeMessageManager');
 				await this.realtimeMessageManager.sendMessage(message, 'text');
 				if (this.chatUI) {
 					this.showVisitorWaitingMessageOnce(this.chatUI, currentChatId);
 				}
 			} else {
-				// Queremos crear un chat nuevo (pendingNewChat=true) o no hay chat activo
-				debugLog('[TrackingPixelSDK] FORZANDO creación de chat nuevo...');
-
-				// Resetear el flag inmediatamente para evitar múltiples creaciones
-				this.pendingNewChat = false;
-				debugLog('[TrackingPixelSDK] 🚩 pendingNewChat = false (reseteado)');
+				debugLog('[TrackingPixelSDK] Sin chat activo, creando hilo y enviando mensaje...');
 
 				const visitorId = this.getVisitorId();
 				if (!visitorId) {
@@ -1036,7 +1000,7 @@ export class TrackingPixelSDK {
 						}
 					},
 					'text',
-					true // forceNewChat: siempre crear chat nuevo
+					false,
 				);
 
 				debugLog('[TrackingPixelSDK] Chat creado/mensaje enviado:', result);
@@ -1081,34 +1045,10 @@ export class TrackingPixelSDK {
 	}
 
 	/**
-	 * Configura los callbacks del Chat Selector
-	 */
-	private setupChatSelectorCallbacks(): void {
-		if (!this.chatUI) return;
-
-		// Callback para cambiar de chat
-		this.chatUI.onChatSwitch = async (chatId: string) => {
-			debugLog('[TrackingPixelSDK] Chat Selector: cambiando a chat', chatId);
-			await this.switchChat(chatId);
-		};
-
-		// Callback para crear nuevo chat
-		this.chatUI.onNewChatRequest = async () => {
-			debugLog('[TrackingPixelSDK] Chat Selector: solicitando nuevo chat');
-			await this.createNewChat();
-		};
-
-		debugLog('[TrackingPixelSDK] Chat Selector callbacks configurados');
-	}
-
-	/**
 	 * Cambia a un chat específico
 	 */
 	public async switchChat(chatId: string): Promise<void> {
 		debugLog('[TrackingPixelSDK] 🔄 Cambiando a chat:', chatId);
-
-		// Resetear el flag de nuevo chat ya que estamos cambiando a un chat existente
-		this.pendingNewChat = false;
 
 		// Limpiar mensajes actuales
 		if (this.chatUI) {
@@ -1145,47 +1085,6 @@ export class TrackingPixelSDK {
 		});
 
 		debugLog('[TrackingPixelSDK] ✅ Cambio de chat completado:', chatId);
-	}
-
-	/**
-	 * Crea un nuevo chat para el visitante
-	 *
-	 * NOTA: Este método solo resetea el estado del chat actual.
-	 * La limpieza de UI y mostrar Quick Actions se hace en ChatUI.resetHeaderToDefault()
-	 * que se llama DESPUÉS de este método en el flujo de handleNewChatRequest().
-	 */
-	public async createNewChat(): Promise<void> {
-		debugLog('[TrackingPixelSDK] 🆕 Creando nuevo chat');
-
-		// IMPORTANTE: Marcar que queremos crear un nuevo chat
-		// Este flag se usa en onQuickActionSendMessage para forzar la creación
-		// de un chat nuevo en lugar de enviar a uno existente
-		this.pendingNewChat = true;
-		debugLog('[TrackingPixelSDK] 🚩 pendingNewChat = true');
-
-		// Resetear el chat actual en el RealtimeMessageManager
-		// Esto sale de la sala WebSocket actual y establece currentChatId a ''
-		if (this.realtimeMessageManager) {
-			this.realtimeMessageManager.setCurrentChat('');
-		}
-
-		// Resetear el estado interno del ChatUI para permitir creación de nuevo chat
-		if (this.chatUI) {
-			this.chatUI.setChatId('');
-			this.chatUI.updateSelectedChat(null);
-			this.chatUI.setCreatingChat(false);
-			// Clear messages and header so the previous chat's history and agent
-			// info are not shown while the visitor composes the first message.
-			this.chatUI.clearMessages();
-			this.chatUI.resetHeaderToDefault();
-		}
-
-		// Trackear el evento
-		this.captureEvent('new_chat_requested', {
-			timestamp: Date.now()
-		});
-
-		debugLog('[TrackingPixelSDK] ✅ Listo para crear nuevo chat');
 	}
 
 	/**
@@ -2606,11 +2505,14 @@ export class TrackingPixelSDK {
 		chat.setLoadingInitialMessages(true);
 
 		try {
-			const chatId = chat.getChatId();
+			const chatId = chat.getChatId() || ChatSessionStore.getInstance().getCurrent();
 			if (!chatId) {
 				debugLog('[TrackingPixelSDK] 💬 No hay chatId, omitiendo carga de mensajes');
 				chat.checkAndAddInitialMessages?.();
 				return;
+			}
+			if (!chat.getChatId()) {
+				chat.setChatId(chatId);
 			}
 
 			debugLog('[TrackingPixelSDK] 💬 Cargando mensajes para chat:', chatId, 'force:', force);
@@ -3152,8 +3054,6 @@ export class TrackingPixelSDK {
 			quickActions: this.quickActionsConfig,
 			// 🤖 Configuración de IA para renderizado de mensajes
 			ai: this.aiConfig,
-			// 📋 Configuración del selector de chats
-			chatSelector: this.chatSelectorConfig,
 		});
 
 		// Configurar callbacks de Quick Actions

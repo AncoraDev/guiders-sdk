@@ -4,14 +4,12 @@ import { ChatPositionConfig, MobileDetectionConfig, AIConfig } from "../../types
 import type { DeviceSpecificPosition } from "../../utils/position-resolver";
 import { AIMetadata } from "../../types/websocket-types";
 import type { QuickActionsConfig } from "./quick-actions-types";
-import type { ChatSelectorConfig } from "./chat-selector-types";
 
 /**
  * Patch #23 (Chunk 2): replaced `export *` with explicit named re-exports so
  * adding a new symbol to a sub-module is an intentional publication. Same
- * rationale as Patch #8 for the signals barrel. `QuickActionsConfig` and
- * `ChatSelectorConfig` are imported at the top of this file as `type`-only
- * (used in interface bodies below) and re-exported here under the same name.
+ * rationale as Patch #8 for the signals barrel. `QuickActionsConfig` is
+ * imported at the top as `type`-only and re-exported here under the same name.
  */
 
 // Re-export Quick Actions types
@@ -24,17 +22,6 @@ export type {
 	InternalQuickActionsConfig,
 	QuickActionSendPayload, // moved here by Patch #29
 } from './quick-actions-types';
-
-// Re-export Chat Selector types
-export type {
-	ChatSelectorItem,
-	ChatSelectorStatus,
-	ChatSelectorConfig,
-	InternalChatSelectorConfig,
-	ChatSelectorState,
-	ChatSelectorCallbacks,
-} from './chat-selector-types';
-export { DEFAULT_CHAT_SELECTOR_CONFIG } from './chat-selector-types';
 
 /**
  * Tipo para identificar el remitente de un mensaje.
@@ -90,8 +77,6 @@ export interface ChatUIOptions {
 	quickActions?: Partial<QuickActionsConfig>;
 	/** Configuración de IA para el chat */
 	ai?: Partial<AIConfig>;
-	/** Configuración del selector de chats (múltiples conversaciones) */
-	chatSelector?: Partial<ChatSelectorConfig>;
 	/** Configuración del banner mostrado cuando el comercial está offline. Patch #13. */
 	offlineBanner?: {
 		/** Texto del banner offline (default: "Agente desconectado — te responderemos en cuanto vuelva"). */

@@ -7,8 +7,6 @@
  * consumers tried to import other hooks from the same path.
  */
 export { useScrollToBottom } from './useScrollToBottom';
-export { useChatList } from './useChatList';
-export type { UseChatListResult } from './useChatList';
 export { usePagination } from './usePagination';
 export type { UsePaginationResult } from './usePagination';
 export { usePresence } from './usePresence';

@@ -18,7 +18,6 @@ export {
     chatDetailSignal,
     lastKnownChatStatusSignal,
     isVisibleSignal,
-    isShowingChatListSignal,
     isCreatingChatSignal,
     isLoadingInitialMessagesSignal,
     presenceStatusSignal,
@@ -29,7 +28,6 @@ export {
     isTypingSignal,
     lastManualCloseTimestampSignal,
     AUTO_OPEN_BLOCK_MS,
-    chatSelectorEnabledSignal,
     offlineBannerTextSignal,
     chatInputPlaceholderSignal,
     hasAssignedCommercialSignal,
@@ -73,7 +71,6 @@ export { presenceServiceSignal, commercialPresenceMapSignal } from './presenceSt
 // --- actionState ---
 export {
     chatSwitchRequestSignal,
-    newChatRequestSignal,
     quickActionSendMessageSignal,
     quickActionRequestAgentSignal,
     trackQuickActionSignal,

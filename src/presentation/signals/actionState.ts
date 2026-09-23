@@ -9,11 +9,8 @@ import type { QuickActionType, QuickActionSendPayload } from '../types/quick-act
  *   - Pulse counter signals: UI increments by 1, bridge reacts to any change.
  */
 
-/** Emitted when the visitor selects a chat from the chat-list selector. */
+/** Emitted when the visitor switches to another existing chat (API interna). */
 export const chatSwitchRequestSignal = signal<string | null>(null);
-
-/** Incremented when the visitor requests a brand-new chat. */
-export const newChatRequestSignal = signal<number>(0);
 
 /**
  * Emitted when the visitor sends a message via a Quick Action button.
