@@ -21,3 +21,5 @@ wp-content/cache/
 /*.png
 opencode.json
 wordpress-plugin/guiders-wp-plugin/assets/js/guiders-sdk.js
+wordpress-plugin/guiders-wp-plugin-*.zip
+wordpress-plugin/dist/

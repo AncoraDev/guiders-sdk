@@ -79,7 +79,7 @@ El plugin solo instala el pixel (API key, entorno, tracking). Chat on/off, tema 
 | [WORDPRESS_ACTIVE_HOURS.md](./wordpress/WORDPRESS_ACTIVE_HOURS.md) | Horario activo en WP (código SDK; ya no se configura en el plugin) |
 | [WORDPRESS_AUTO_UPDATES.md](./wordpress/WORDPRESS_AUTO_UPDATES.md) | Auto-updates del plugin |
 
-**Más docs del plugin:** [`wordpress-plugin/README.md`](../wordpress-plugin/README.md), [`GUIA-USUARIO.md`](../wordpress-plugin/GUIA-USUARIO.md), [`DEBUGGING_GUIDE.md`](../wordpress-plugin/DEBUGGING_GUIDE.md).
+**Más docs del plugin:** [`wordpress-plugin/README.md`](../wordpress-plugin/README.md), [`PUBLICAR-AUTOPRACTIK.md`](../wordpress-plugin/PUBLICAR-AUTOPRACTIK.md), [`GUIA-USUARIO.md`](../wordpress-plugin/GUIA-USUARIO.md), [`DEBUGGING_GUIDE.md`](../wordpress-plugin/DEBUGGING_GUIDE.md).
 
 ---
 

@@ -1,14 +1,14 @@
 === Guiders SDK ===
 Contributors: guiders
-Tags: analytics, chat, tracking, ecommerce, woocommerce, live-chat, heuristic-detection, gdpr, consent-banner, cookies
+Tags: analytics, chat, tracking, ecommerce, woocommerce, live-chat
 Requires at least: 5.0
-Tested up to: 6.4
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.13.3
+Stable tag: 2.14.0
 License: ISC
 License URI: https://opensource.org/licenses/ISC
 
-Integra el SDK de Guiders para tracking inteligente, chat en vivo y notificaciones en tu sitio WordPress. Incluye banner de consentimiento GDPR integrado sin necesidad de código.
+Instala el pixel de Guiders en WordPress. Tracking y chat; el aspecto del widget se configura en Console.
 
 == Description ==
 
@@ -83,32 +83,15 @@ El plugin sigue las mejores prácticas de WordPress:
 
 == Installation ==
 
-### Instalación Automática
+No está en wordpress.org. Se instala con el ZIP (sin FTP):
 
-1. Ve a **Plugins > Añadir nuevo** en tu admin de WordPress
-2. Busca "Guiders SDK"
-3. Haz clic en "Instalar ahora"
-4. Activa el plugin
+1. En WordPress: **Plugins → Añadir nuevo → Subir plugin**
+2. Elige `guiders-wp-plugin-2.14.0.zip`
+3. Activa **Guiders SDK** (si ya lo tenías, WordPress ofrece reemplazar)
+4. **Ajustes → Guiders SDK**: API key + entorno `production`
+5. Chat, color y posición: **Console → Configuración → Chat web**
 
-### Instalación Manual
-
-1. Descarga el archivo del plugin
-2. Sube la carpeta `guiders-wp-plugin` a `/wp-content/plugins/`
-3. Activa el plugin desde el menú **Plugins** en WordPress
-
-### Configuración Inicial
-
-1. Ve a **Configuración > Guiders SDK**
-2. Ingresa tu **API Key** de Guiders (obténla desde tu panel de Guiders)
-3. Habilita las características que desees usar
-4. Guarda los cambios
-
-### Obtener API Key
-
-1. Regístrate en [Guiders](https://guiders.ancoradual.com)
-2. Crea un nuevo proyecto
-3. Copia la API Key desde el dashboard
-4. Pégala en la configuración del plugin
+API Key: [Console Guiders](https://guiders-console.ancoradual.com)
 
 == Frequently Asked Questions ==
 
@@ -149,6 +132,12 @@ El plugin respeta las configuraciones de privacidad. Consulta la documentación 
 5. Dashboard de analytics en Guiders
 
 == Changelog ==
+
+= 2.14.0 =
+* El plugin solo instala el pixel (API key, entorno, tracking). Chat, tema y posición salen de Console.
+* Eliminadas las pestañas Chat y Cookies/GDPR del admin.
+* Producción apunta a guiders-api.ancoradual.com (ya no guiders.es).
+* Actualizaciones desde GitHub AncoraDev/guiders-sdk.
 
 = 2.13.3 =
 * **🐛 Bug Fixes**:

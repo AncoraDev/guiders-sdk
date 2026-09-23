@@ -19,7 +19,7 @@ class GuidersUpdater {
     /**
      * GitHub repository information
      */
-    private const GITHUB_REPO = 'RogerPugaRuiz/guiders-sdk';
+    private const GITHUB_REPO = 'AncoraDev/guiders-sdk';
     private const GITHUB_API_URL = 'https://api.github.com/repos/' . self::GITHUB_REPO . '/releases';
     
     /**
@@ -122,17 +122,9 @@ class GuidersUpdater {
                     'new_version'   => $version_info['version'],
                     'url'           => isset($this->plugin_data['PluginURI']) ? $this->plugin_data['PluginURI'] : '',
                     'package'       => $version_info['download_url'],
-                    'tested'        => isset($version_info['tested']) ? $version_info['tested'] : '6.4',
+                    'tested'        => isset($version_info['tested']) ? $version_info['tested'] : '6.8',
                     'requires_php'  => isset($version_info['requires_php']) ? $version_info['requires_php'] : '7.4',
                     'compatibility' => new stdClass(),
-                    'icons'         => array(
-                        '1x' => 'https://github.com/RogerPugaRuiz/guiders-sdk/raw/main/wordpress-plugin/icon-128x128.png',
-                        '2x' => 'https://github.com/RogerPugaRuiz/guiders-sdk/raw/main/wordpress-plugin/icon-256x256.png'
-                    ),
-                    'banners'       => array(
-                        'low'  => 'https://github.com/RogerPugaRuiz/guiders-sdk/raw/main/wordpress-plugin/banner-772x250.png',
-                        'high' => 'https://github.com/RogerPugaRuiz/guiders-sdk/raw/main/wordpress-plugin/banner-1544x500.png'
-                    )
                 );
 
                 // Log update available
@@ -241,7 +233,7 @@ class GuidersUpdater {
                 'download_url' => $download_url,
                 'details_url'  => isset($latest_release['html_url']) ? $latest_release['html_url'] : '',
                 'changelog'    => isset($latest_release['body']) ? $latest_release['body'] : '',
-                'tested'       => '6.4',
+                'tested'       => '6.8',
                 'requires_php' => '7.4'
             );
 
@@ -287,7 +279,7 @@ class GuidersUpdater {
                 'author'        => $author,
                 'homepage'      => $homepage,
                 'requires'      => '5.0',
-                'tested'        => '6.4',
+                'tested'        => '6.8',
                 'requires_php'  => '7.4',
                 'downloaded'    => 0,
                 'last_updated'  => date('Y-m-d'),
@@ -296,10 +288,6 @@ class GuidersUpdater {
                     'changelog'   => isset($version_info['changelog']) ? $version_info['changelog'] : 'Ver cambios en GitHub'
                 ),
                 'download_link' => $version_info['download_url'],
-                'banners'       => array(
-                    'low'  => 'https://github.com/RogerPugaRuiz/guiders-sdk/raw/main/wordpress-plugin/banner-772x250.png',
-                    'high' => 'https://github.com/RogerPugaRuiz/guiders-sdk/raw/main/wordpress-plugin/banner-1544x500.png'
-                )
             );
 
         } catch (Throwable $e) {
