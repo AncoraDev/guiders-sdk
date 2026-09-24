@@ -4,6 +4,10 @@ Guide for AI coding agents working on this TypeScript SDK for real-time visitor 
 
 📚 **Documentation index**: [`docs/README.md`](docs/README.md)
 
+## Publicar en producción
+
+Commit en `main`, push, y en el VPS `git pull --ff-only`. No copiar archivos al servidor ni editar código allí. La demo la sirve nginx desde `/var/www/guiders-sdk/demo/app`. Detalle: `guiders-backend/docs/ops/new-server/publish.md`.
+
 ## Build/Lint/Test Commands
 
 ```bash
