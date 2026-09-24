@@ -78,7 +78,8 @@ jobs:
           prerelease: true
           files: |
             wordpress-plugin/guiders-wp-plugin-${{ steps.meta.outputs.version }}.zip
+            wordpress-plugin/guiders-wp-plugin/assets/js/guiders-sdk.min.js
 
       - name: ✅ Summary
         run: |
-          echo "Pre-release creado para tag ${{ github.ref_name }} con asset guiders-wp-plugin-${{ steps.meta.outputs.version }}.zip" >> $GITHUB_STEP_SUMMARY
+          echo "Pre-release creado para tag ${{ github.ref_name }} con guiders-wp-plugin-${{ steps.meta.outputs.version }}.zip y guiders-sdk.min.js" >> $GITHUB_STEP_SUMMARY
