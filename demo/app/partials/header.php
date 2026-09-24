@@ -12,9 +12,11 @@
   <?php
     $guidersHost = strtolower(preg_replace('/:\\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost'));
     $guidersIsRemote = $guidersHost === 'guiders-demo.ancoradual.com';
-    $guidersApiKey = $guidersIsRemote
-      ? hash('sha256', $guidersHost)
-      : '12ca17b49af2289436f303e0166030a21e525d266e209267433801a8fd4071a0';
+    // 127.0.0.1 y localhost son el mismo sitio para la API.
+    $guidersKeyHost = ($guidersHost === '127.0.0.1' || $guidersHost === 'localhost')
+      ? 'localhost'
+      : $guidersHost;
+    $guidersApiKey = hash('sha256', $guidersKeyHost);
     $guidersEndpoint = $guidersIsRemote
       ? 'https://guiders-api.ancoradual.com/api'
       : 'http://localhost:3000/api';
