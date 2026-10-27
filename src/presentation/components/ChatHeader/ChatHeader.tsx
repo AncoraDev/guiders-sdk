@@ -7,7 +7,7 @@ import {
     presenceStatusSignal,
     visitorIdSignal,
 } from '../../signals/chatState';
-import { leadCaptureOwnsThreadSignal } from '../../signals/leadCaptureState';
+import { leadCaptureModeSignal } from '../../signals/leadCaptureState';
 import { toggleClickedSignal, toggleChatOpenSignal } from '../../signals/toggleState';
 import { generateInitials, getVisitorTestHint } from '../../utils/chat-utils';
 import { CommercialAvatar } from './CommercialAvatar';
@@ -42,7 +42,7 @@ export function ChatHeader({ options }: ChatHeaderProps) {
     const commercial = chatDetail?.assignedCommercial;
     const assignedPresence = assignedPresenceStatusSignal.value;
     const supportOnline = presenceStatusSignal.value !== 'offline';
-    const leadCaptureOwnsThread = leadCaptureOwnsThreadSignal.value;
+    const leadCaptureOffered = leadCaptureModeSignal.value !== 'off';
     const title = options.title ?? 'Atención al usuario';
     const visitorHint = getVisitorTestHint(visitorIdSignal.value);
 
@@ -134,7 +134,7 @@ export function ChatHeader({ options }: ChatHeaderProps) {
                                 <span class="chat-header-title">{title}</span>
                                 {showNoAgentsMessage && (
                                     <span class="chat-header-subtitle" role="status">
-                                        {leadCaptureOwnsThread
+                                        {leadCaptureOffered
                                             ? LEAD_CAPTURE_SUBTITLE
                                             : NO_AGENTS_SUBTITLE}
                                     </span>

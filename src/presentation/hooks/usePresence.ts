@@ -18,6 +18,7 @@ import {
     chatIdSignal,
     chatDetailSignal,
 } from '../signals/chatState';
+import { supportOnlineSignal } from '../signals/leadCaptureState';
 import { presenceServiceSignal } from '../signals/presenceState';
 import type { PresenceUiStatus } from '../types/presence-types';
 import type { PresenceChangedEvent } from '../../types/presence-types';
@@ -37,6 +38,9 @@ function toUiStatus(raw: string): PresenceUiStatus {
 
 function applySupportPresence(next: PresenceUiStatus): void {
     presenceStatusSignal.value = next;
+    // La cabecera y el asistente de captación tienen que ver el mismo hecho.
+    // Sin esto, al desconectarse el equipo la cabecera cambia y el formulario no.
+    supportOnlineSignal.value = next !== 'offline';
     // El aviso de "sin agentes" vive en el header; no duplicamos con OfflineBanner.
     if (offlineBannerEnabledSignal.value && next !== 'offline') {
         showOfflineBannerSignal.value = false;
