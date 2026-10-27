@@ -39,6 +39,18 @@ function getDate(timestamp?: number): Date {
     return timestamp ? new Date(timestamp) : new Date();
 }
 
+/** Quién escribió la burbuja. El asignado actual solo vale si el mensaje es suyo. */
+function authorNameFor(msg: ChatMessageParams): string | undefined {
+    const writtenBy = msg.senderName?.trim();
+    if (writtenBy) return writtenBy;
+
+    const assigned = chatDetailSignal.value?.assignedCommercial;
+    if (assigned?.name && msg.senderId && msg.senderId === assigned.id) {
+        return assigned.name;
+    }
+    return undefined;
+}
+
 /**
  * Build a stable identity for a message so Preact does not remount bubbles when
  * older messages are prepended (Patch #4). Falls back to a content hash when
@@ -221,8 +233,7 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
             if (contactAction === 'contact_request') {
                 const preface = (msg.systemData?.preface || msg.text || '').trim();
                 if (preface) {
-                    const commercialName = chatDetailSignal.value?.assignedCommercial?.name;
-                    const authorName = msg.senderName || commercialName;
+                    const authorName = authorNameFor(msg);
                     nodes.push(
                         <MessageBubble
                             key={`${messageKey(msg, idx)}:preface`}
@@ -281,8 +292,7 @@ function renderMessagesWithDateSeparators(messages: ChatMessageParams[]): VNode[
         const currentGroup = resolveGroupKey(msg);
         const nextGroup = next ? resolveGroupKey(next) : null;
         const isLastInGroup = currentGroup !== nextGroup || next == null;
-        const commercialName = chatDetailSignal.value?.assignedCommercial?.name;
-        const authorName = msg.senderName || commercialName;
+        const authorName = authorNameFor(msg);
         nodes.push(
             <MessageBubble
                 key={messageKey(msg, idx)}

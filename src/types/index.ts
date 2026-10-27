@@ -158,6 +158,8 @@ export interface MessageV2 {
 	id: string;
 	chatId: string;
 	senderId: string;
+	/** Nombre de la cuenta que escribió el mensaje. */
+	senderName?: string;
 	content: string;
 	type: string;
 	isInternal: boolean;
