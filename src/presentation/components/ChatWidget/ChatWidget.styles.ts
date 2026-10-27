@@ -244,6 +244,7 @@ export function getChatStyles(position: ResolvedPosition): string {
             margin-left: -10px;
             border: 2px solid var(--gds-color-header-bg, #111827);
             background: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 14%, transparent);
+            overflow: hidden;
         }
 
         .chat-header-avatar--stack:first-child {
@@ -263,6 +264,22 @@ export function getChatStyles(position: ResolvedPosition): string {
         .chat-header-avatar--stack svg {
             width: 14px;
             height: 14px;
+        }
+
+        .chat-header-avatar--stack img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+        }
+
+        .chat-header-avatar-initials {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            color: var(--gds-color-header-text, #ffffff);
         }
 
         .avatar-status-dot {
@@ -334,7 +351,7 @@ export function getChatStyles(position: ResolvedPosition): string {
             line-height: 1;
             user-select: all;
             cursor: text;
-            color: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 38%, transparent);
+            color: color-mix(in srgb, var(--gds-color-header-text, #ffffff) 72%, transparent);
         }
 
         .chat-close-btn {

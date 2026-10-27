@@ -127,28 +127,10 @@ export function createDateSeparator(dateStr: string): HTMLDivElement {
 
 /**
  * Pista de pruebas: últimos 8 del visitorId, mismo recorte que Console
- * (`Visitante #2d2d912d`). Solo en localhost / ?dev / GUIDERS_CONFIG.dev.
+ * (`Visitante #2d2d912d`). Visible en la cabecera para identificar al visitante.
  */
 export function getVisitorTestHint(visitorId: string | null | undefined): string | null {
 	if (!visitorId || visitorId.length < 8) {
-		return null;
-	}
-
-	if (typeof window === 'undefined') {
-		return null;
-	}
-
-	const host = window.location.hostname;
-	const isLocal = host === 'localhost' || host === '127.0.0.1';
-	const params = new URLSearchParams(window.location.search);
-	const cfg = (window as Window & { GUIDERS_CONFIG?: { dev?: boolean; environment?: string } }).GUIDERS_CONFIG;
-	const isDev =
-		isLocal ||
-		params.has('dev') ||
-		cfg?.dev === true ||
-		cfg?.environment === 'development';
-
-	if (!isDev) {
 		return null;
 	}
 

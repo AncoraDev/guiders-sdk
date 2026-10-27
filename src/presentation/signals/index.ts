@@ -22,6 +22,7 @@ export {
     isLoadingInitialMessagesSignal,
     presenceStatusSignal,
     onlineCommercialCountSignal,
+    onlineAgentsSignal,
     assignedPresenceStatusSignal,
     showOfflineBannerSignal,
     offlineBannerEnabledSignal,

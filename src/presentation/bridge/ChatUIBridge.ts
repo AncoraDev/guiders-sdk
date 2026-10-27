@@ -39,7 +39,8 @@ import {
     toggleChatOpenSignal,
     toggleResolvedPositionSignal,
 } from '../signals/toggleState';
-import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal, onlineCommercialCountSignal, assignedPresenceStatusSignal } from '../signals/chatState';
+import { isTypingSignal, offlineBannerTextSignal, chatInputPlaceholderSignal, onlineCommercialCountSignal, onlineAgentsSignal, assignedPresenceStatusSignal } from '../signals/chatState';
+import type { OnlineAgentFace } from '../signals/chatState';
 import { mountChatWidget } from '../components/ChatWidget';
 import { ToggleBridge } from './ToggleBridge';
 
@@ -855,10 +856,11 @@ export class ChatUIBridge {
     notifyChatOpenState(isOpen: boolean): void { this.toggleBridge.notifyChatOpenState(isOpen); }
     updateUnreadCount(count: number | null | undefined): void { this.toggleBridge.updateUnreadCount(count); }
 
-    /** Recuento de comerciales online (cabecera de equipo, no badge de no leídos). */
-    setOnlineCommercialCount(count: number): void {
+    /** Recuento y caras de los comerciales online (cabecera de equipo). */
+    setOnlineCommercialCount(count: number, agents?: OnlineAgentFace[]): void {
         const next = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
         onlineCommercialCountSignal.value = next;
+        onlineAgentsSignal.value = next > 0 ? (agents ?? []).slice(0, 3) : [];
     }
 
     /** Guion de captación resuelto para este sitio (null si no hay ninguno). */

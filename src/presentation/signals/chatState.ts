@@ -69,6 +69,15 @@ export const presenceStatusSignal = signal<PresenceUiStatus>('offline');
  */
 export const onlineCommercialCountSignal = signal<number>(0);
 
+/** Cara de un comercial online, para el stack cuando nadie está asignado. */
+export interface OnlineAgentFace {
+    name: string;
+    avatarUrl?: string | null;
+}
+
+/** @writer bridge — comerciales online con nombre y avatar. */
+export const onlineAgentsSignal = signal<OnlineAgentFace[]>([]);
+
 /**
  * @writer hooks|bridge — presencia del comercial asignado (null si no hay).
  * El header muestra avatar si hay asignado y esto no es offline (null = aún no sabemos).

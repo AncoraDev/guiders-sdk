@@ -2137,7 +2137,7 @@ export class TrackingPixelSDK {
 		const hideWhenUnavailable =
 			this.commercialAvailabilityConfig?.hideWhenUnavailable !== false;
 
-		this.commercialAvailabilityService.onAvailabilityChanged((available, count) => {
+		this.commercialAvailabilityService.onAvailabilityChanged((available, count, agents) => {
 			debugLog(`📡 [CommercialAvailability] Estado cambió: ${available} (${count} online)`);
 
 			// Sincronizar presencia in-chat (header / banner) con disponibilidad tenant
@@ -2150,7 +2150,7 @@ export class TrackingPixelSDK {
 
 			if (available && count >= 1) {
 				presenceSvc?.applyCommercialStatus?.('online');
-				chat.setOnlineCommercialCount?.(count);
+				chat.setOnlineCommercialCount?.(count, agents);
 				chat.showToggleButton();
 				if (this.commercialAvailabilityConfig?.showBadge) {
 					chat.updateUnreadCount(count);

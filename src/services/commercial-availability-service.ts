@@ -37,6 +37,8 @@ export interface AvailabilityResponse {
 	siteId: string;
 	/** companyId — room WS = tenant:{tenantId} */
 	tenantId?: string;
+	/** Comerciales online, para sus avatares en la cabecera sin asignar */
+	onlineAgents?: Array<{ name: string; avatarUrl?: string | null }>;
 }
 
 export interface AvailabilityError {
@@ -51,9 +53,10 @@ export interface AvailabilityError {
  */
 export class CommercialAvailabilityService {
 	private config: CommercialAvailabilityConfig;
-	private onAvailabilityChangeCallback: ((available: boolean, count: number) => void) | null = null;
+	private onAvailabilityChangeCallback: ((available: boolean, count: number, agents: Array<{ name: string; avatarUrl?: string | null }>) => void) | null = null;
 	private lastAvailability: boolean | null = null;
 	private lastOnlineCount: number = 0;
+	private lastAgentsKey: string = '';
 	private tenantId: string | null = null;
 	private wsListenerRegistered: boolean = false;
 
@@ -76,7 +79,7 @@ export class CommercialAvailabilityService {
 	/**
 	 * Registers callback invoked on every availability change.
 	 */
-	onAvailabilityChanged(callback: (available: boolean, count: number) => void): void {
+	onAvailabilityChanged(callback: (available: boolean, count: number, agents: Array<{ name: string; avatarUrl?: string | null }>) => void): void {
 		this.onAvailabilityChangeCallback = callback;
 		this.log('📡 [CommercialAvailability] Callback registrado');
 	}
@@ -133,7 +136,7 @@ export class CommercialAvailabilityService {
 				);
 			}
 
-			this.notify(data.available, data.onlineCount);
+			this.notify(data.available, data.onlineCount, data.onlineAgents ?? []);
 
 			// Re-join if we just learned the correct tenant room
 			if (this.tenantId && this.wsListenerRegistered) {
@@ -162,7 +165,7 @@ export class CommercialAvailabilityService {
 		ws.updateCallbacks({
 			onCommercialAvailabilityChanged: (event) => {
 				this.log('📡 [CommercialAvailability] WS event recibido:', event);
-				this.notify(event.available, event.onlineCount);
+				this.notify(event.available, event.onlineCount, event.onlineAgents ?? []);
 			},
 			// Re-join tenant room after reconnection (the WebSocketService also does it
 			// internally via currentTenantId, but this ensures the join happens when
@@ -208,12 +211,22 @@ export class CommercialAvailabilityService {
 
 	// ─── Private ────────────────────────────────────────────────────────────────
 
-	private notify(available: boolean, onlineCount: number): void {
-		if (available !== this.lastAvailability || onlineCount !== this.lastOnlineCount) {
+	private notify(
+		available: boolean,
+		onlineCount: number,
+		agents: Array<{ name: string; avatarUrl?: string | null }> = [],
+	): void {
+		const agentsKey = agents.map((agent) => `${agent.name}|${agent.avatarUrl ?? ''}`).join('\n');
+		if (
+			available !== this.lastAvailability ||
+			onlineCount !== this.lastOnlineCount ||
+			agentsKey !== this.lastAgentsKey
+		) {
 			this.log(`📡 [CommercialAvailability] 🔄 Estado cambió: ${available} (${onlineCount} online)`);
 			this.lastAvailability = available;
 			this.lastOnlineCount = onlineCount;
-			this.onAvailabilityChangeCallback?.(available, onlineCount);
+			this.lastAgentsKey = agentsKey;
+			this.onAvailabilityChangeCallback?.(available, onlineCount, agents);
 		}
 	}
 

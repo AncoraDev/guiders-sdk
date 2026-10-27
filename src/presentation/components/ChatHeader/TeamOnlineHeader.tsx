@@ -1,5 +1,6 @@
-import { onlineCommercialCountSignal } from '../../signals/chatState';
+import { onlineAgentsSignal, onlineCommercialCountSignal, type OnlineAgentFace } from '../../signals/chatState';
 import { PresenceIndicator } from '../PresenceIndicator';
+import { generateInitials } from '../../utils/chat-utils';
 
 const TEAM_TITLE = 'Equipo conectado';
 const TEAM_SUBTITLE_DEFAULT = 'Te atendemos en cuanto escribas.';
@@ -13,13 +14,32 @@ function personSilhouette() {
     );
 }
 
+function stackFace(agent: OnlineAgentFace | undefined) {
+    if (agent?.avatarUrl) {
+        return (
+            <img src={agent.avatarUrl} alt="" role="presentation" />
+        );
+    }
+    if (agent?.name) {
+        return (
+            <span class="chat-header-avatar-initials" aria-hidden="true">
+                {generateInitials(agent.name)}
+            </span>
+        );
+    }
+    return personSilhouette();
+}
+
 /**
  * Cabecera cuando hay comerciales online pero ninguno asignado a este chat.
- * Stack genérico: no son caras reales (el API solo da un recuento).
+ * Muestra sus avatares (o las iniciales si aún no tienen foto).
  */
 export function TeamOnlineHeader() {
     const count = onlineCommercialCountSignal.value;
-    const stackSize = count >= 3 ? 3 : 2;
+    const agents = onlineAgentsSignal.value.slice(0, 3);
+    const slots: Array<OnlineAgentFace | undefined> = agents.length > 0
+        ? agents
+        : Array.from({ length: count >= 3 ? 3 : 2 }, () => undefined);
     const subtitle = count > 1
         ? `Hay ${count} personas disponibles.`
         : TEAM_SUBTITLE_DEFAULT;
@@ -27,12 +47,13 @@ export function TeamOnlineHeader() {
     return (
         <div class="chat-header-identity chat-header-identity--team">
             <div class="chat-header-avatar-container chat-header-avatar-stack">
-                {Array.from({ length: stackSize }, (_, index) => (
+                {slots.map((agent, index) => (
                     <div
                         class={`chat-header-avatar chat-header-avatar--stack chat-header-avatar--stack-${index}`}
                         key={index}
+                        title={agent?.name}
                     >
-                        {personSilhouette()}
+                        {stackFace(agent)}
                     </div>
                 ))}
                 <PresenceIndicator />

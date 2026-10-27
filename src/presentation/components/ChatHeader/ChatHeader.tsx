@@ -33,7 +33,7 @@ const LEAD_CAPTURE_SUBTITLE =
 /**
  * Header del chat:
  * - Comercial asignado online → foto + nombre.
- * - Equipo online sin asignar → stack genérico + "Equipo conectado".
+ * - Equipo online sin asignar → avatares del equipo + "Equipo conectado".
  * - Nadie online → icono de burbuja + aviso.
  */
 export function ChatHeader({ options }: ChatHeaderProps) {

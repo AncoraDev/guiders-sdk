@@ -276,4 +276,6 @@ export interface CommercialAvailabilityChangedEvent {
 	tenantId: string;
 	/** ISO 8601 timestamp del evento */
 	timestamp: string;
+	/** Comerciales online, para sus avatares */
+	onlineAgents?: Array<{ name: string; avatarUrl?: string | null }>;
 }
