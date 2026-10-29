@@ -12,6 +12,8 @@ export interface IdentifyVisitorResponse {
   isNewVisitor?: boolean;
   consentStatus?: 'granted' | 'denied' | 'pending';
   allowedActions?: string[];
+  /** La empresa bloqueó a este visitante. No explicar el motivo en el widget. */
+  blocked?: boolean;
 }
 
 /**
@@ -114,7 +116,8 @@ export class VisitorsV2Service {
           lifecycle: data.lifecycle,
           isNewVisitor: data.isNewVisitor,
           consentStatus: data.consentStatus || 'granted',
-          allowedActions: data.allowedActions || ['chat', 'forms', 'tracking', 'all']
+          allowedActions: data.allowedActions || ['chat', 'forms', 'tracking', 'all'],
+          blocked: data.blocked === true,
         };
 
         if (response.visitorId) localStorage.setItem('visitorId', response.visitorId);

@@ -176,6 +176,8 @@ export class TrackingPixelSDK {
 	private mobileDetectionConfig?: MobileDetectionConfig;
 	private activeHoursValidator?: ActiveHoursValidator;
 	private identifyExecuted: boolean = false; // Flag para prevenir múltiples llamadas a identify()
+	/** Identify dijo que la empresa bloqueó a este navegador. El widget no lo explica. */
+	private visitorBlocked = false;
 	/** Evita doble createChatAuto en el mismo load tras identify. */
 	private siteEntryPendingEnsured: boolean = false;
 	private wsService: WebSocketService;
@@ -1293,7 +1295,7 @@ export class TrackingPixelSDK {
 
 			// Usar identitySignal en lugar de llamar directamente al servicio
 			const result = await this.identitySignal.identify(this.fingerprint!, this.apiKey, consentVersion);
-			if (result?.identity?.visitorId) {
+				if (result?.identity?.visitorId) {
 				debugLog('[TrackingPixelSDK] ✅ Visitante identificado con identitySignal:', result.identity.visitorId);
 
 				// Configurar sessionId en ConsentBackendService
@@ -1304,6 +1306,13 @@ export class TrackingPixelSDK {
 				}
 
 				this.trackPageViewAfterIdentify();
+
+				if (result.identity.blocked) {
+					this.visitorBlocked = true;
+					this.chatUI?.suppressWidget?.();
+					debugLog('[TrackingPixelSDK] Chat oculto');
+					return;
+				}
 
 				// 📬 Inicializar servicio de mensajes no leídos con badge tempranamente
 				// Esto asegura que el badge se actualice correctamente al refrescar la página
@@ -2072,6 +2081,9 @@ export class TrackingPixelSDK {
 	 * el botón del chat.
 	 */
 	private async resolveLeadCaptureFlow(chat: ChatUI): Promise<boolean> {
+		if (this.visitorBlocked) {
+			return false;
+		}
 		try {
 			const service = LeadCaptureFlowService.getInstance();
 			service.configure({
@@ -2652,6 +2664,10 @@ export class TrackingPixelSDK {
 		if (!this.chatUI) {
 			return;
 		}
+		if (this.visitorBlocked) {
+			this.chatUI.suppressWidget();
+			return;
+		}
 
 		const isActive = this.isChatActive();
 		const toggleButtonEl = document.querySelector('.chat-toggle-button') as HTMLElement;
@@ -2690,7 +2706,7 @@ export class TrackingPixelSDK {
 	 * No abre el widget ni muestra mensaje de espera (eso va al primer mensaje del visitante).
 	 */
 	private async ensureSiteEntryPendingChat(hasOpenChat: boolean): Promise<void> {
-		if (hasOpenChat || this.siteEntryPendingEnsured) {
+		if (this.visitorBlocked || hasOpenChat || this.siteEntryPendingEnsured) {
 			return;
 		}
 		this.siteEntryPendingEnsured = true;

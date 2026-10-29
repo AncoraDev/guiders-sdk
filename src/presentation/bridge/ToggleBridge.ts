@@ -16,17 +16,26 @@ import { debugWarn, debugError } from '../../utils/debug-logger';
 export class ToggleBridge {
     private _toggleCallbacks: Array<(visible: boolean) => void> = [];
     private _cachedHost: HTMLElement | null = null;
+    private suppressed = false;
 
     // -------------------------------------------------------------------------
     // Visibility
     // -------------------------------------------------------------------------
 
     initToggleButton(): void {
+        if (this.suppressed) return;
         toggleButtonVisibleSignal.value = true;
     }
 
     showToggleButton(): void {
+        if (this.suppressed) return;
         toggleButtonVisibleSignal.value = true;
+    }
+
+    /** Oculta el botón y no deja que un horario o la captación lo vuelvan a mostrar. */
+    suppress(): void {
+        this.suppressed = true;
+        this.hideToggleButton();
     }
 
     hideToggleButton(): void {

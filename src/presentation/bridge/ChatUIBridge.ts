@@ -851,6 +851,10 @@ export class ChatUIBridge {
     initToggleButton(): void { this.toggleBridge.initToggleButton(); }
     showToggleButton(): void { this.toggleBridge.showToggleButton(); }
     hideToggleButton(): void { this.toggleBridge.hideToggleButton(); }
+    suppressWidget(): void {
+        this.toggleBridge.suppress();
+        if (this.isVisible?.()) this.hide();
+    }
     isButtonVisible(): boolean { return this.toggleBridge.isButtonVisible(); }
     updateToggleState(isOpen: boolean): void { this.toggleBridge.updateToggleState(isOpen); }
     notifyChatOpenState(isOpen: boolean): void { this.toggleBridge.notifyChatOpenState(isOpen); }
